@@ -3,6 +3,7 @@
 # or implementing the sample code, visit the AWS docs:
 # https://aws.amazon.com/developer/language/python/
 
+import json
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import dotenv_values
@@ -33,7 +34,9 @@ def get_secret(secret_name):
         # Decrypts secret using the associated KMS key.
         secret = get_secret_value_response.get('SecretString')
         print(secret)
-        return secret.get(secret_name)
+        json_secret = json.loads(secret)
+        print(json_secret)
+        return json_secret.get(secret_name)
     
     return secrets.get(secret_name)
 
