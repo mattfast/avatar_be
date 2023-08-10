@@ -5,6 +5,8 @@ from flask import Flask, Response, request
 from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
 
+from keys import twilio_key
+
 USER_ID_TO_TYPE_DICT = {1: "pizza", 2: "barbie", 3: "oppenheimer"}
 USER_ID_TO_CONTEXT = {
     1: f"Another person wants to convince Pizza Man to give them a free pizza. You don't know their name.",
@@ -13,9 +15,8 @@ USER_ID_TO_CONTEXT = {
 }
 
 account_sid = "ACfe453c3ef8654f6859d7aab0e23cd10f"
-auth_token = "caff2e482123ac6b32cf398a826c096e"
 twilio_number = "+14066312474"
-client = Client(account_sid, auth_token)
+client = Client(account_sid, twilio_key)
 
 
 def talk(user_number, new_message):

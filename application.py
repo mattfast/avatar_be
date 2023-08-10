@@ -7,6 +7,7 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
+from keys import pinecone_key, mongo_key, twilio_key
 from logic import talk
 
 app = Flask(__name__)
@@ -25,7 +26,7 @@ base = Increment()
 RETURN_VALS = ["not working", "lmao no shot", "hahahaha"]
 
 # init mongodb
-mongo_conection_string = "mongodb+srv://matthew:Hq8D5T7mdKQ0bztS@cluster0.4exrr9f.mongodb.net/?retryWrites=true&w=majority"
+mongo_conection_string = f"mongodb+srv://matthew:{mongo_key}@cluster0.4exrr9f.mongodb.net/?retryWrites=true&w=majority"
 try:
     client = pymongo.MongoClient(mongo_conection_string)
 except pymongo.errors.ConfigurationError:
@@ -41,7 +42,7 @@ mongo_collection = mongo_db["testCollection"]
 
 # init pinecone db
 print("CREATING PINECONE STUFF")
-pinecone.init(api_key="2c27621a-3543-459c-8e4d-c694101c8f24", environment="gcp-starter")
+pinecone.init(api_key=pinecone_key, environment="gcp-starter")
 pinecone_index = pinecone.Index("test-index")
 print("PINECONE INDEX")
 print(pinecone_index)
