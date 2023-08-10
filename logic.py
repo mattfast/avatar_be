@@ -18,11 +18,12 @@ account_sid = "ACfe453c3ef8654f6859d7aab0e23cd10f"
 twilio_number = "+14066312474"
 client = Client(account_sid, twilio_key)
 
-
-def talk(user_number, new_message):
+def talk(user, new_message):
     """Talk with a specific player."""
+    print("USER")
+    print(user)
     print("USER NUMBER")
-    print(user_number)
+    print(user['number'])
 
     print("NEW MESSAGE")
     print(new_message)
@@ -30,5 +31,5 @@ def talk(user_number, new_message):
     client.messages.create(
         body="Hi",
         from_=twilio_number,
-        to=user_number,
+        to=user['number'],
     )

@@ -1,18 +1,15 @@
-import sys
 import threading
 
-import pinecone
-import pymongo
 from flask import Flask, Response, request
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
-from keys import pinecone_key, mongo_key, twilio_key
 from logic import talk
+from db import pinecone_index
+from auth import login
 
 app = Flask(__name__)
 CORS(app)
-
 
 class Increment:
     def __init__(self):
@@ -25,60 +22,25 @@ class Increment:
 base = Increment()
 RETURN_VALS = ["not working", "lmao no shot", "hahahaha"]
 
-# init mongodb
-mongo_conection_string = f"mongodb+srv://matthew:{mongo_key}@cluster0.4exrr9f.mongodb.net/?retryWrites=true&w=majority"
-try:
-    client = pymongo.MongoClient(mongo_conection_string)
-except pymongo.errors.ConfigurationError:
-    print(
-        "An Invalid URI host error was received. Is your Atlas host name correct in your connection string?"
-    )
-    sys.exit(1)
-else:
-    print("MONGO CLIENT CREATED")
-    print(client)
-mongo_db = client.testDB
-mongo_collection = mongo_db["testCollection"]
-
-# init pinecone db
-print("CREATING PINECONE STUFF")
-pinecone.init(api_key=pinecone_key, environment="gcp-starter")
-pinecone_index = pinecone.Index("test-index")
-print("PINECONE INDEX")
-print(pinecone_index)
-
-
 @app.route("/bot", methods=["POST"])
 def message():
     incoming_msg = request.values.get("Body", "").lower()
     user_number = request.values.get("From", "")
     resp = MessagingResponse()
 
+    user, is_first = login(user_number)
+    if user is None:
+        print("ERROR CREATING OR FINDING USER")
+        return Response(str(resp), mimetype="application/xml")
+
     print("INCOMING MSG")
     print(incoming_msg)
     print("USER NUMBER")
     print(user_number)
 
-    print("HERE")
-    t = threading.Thread(target=talk, args=(user_number, incoming_msg))
+    t = threading.Thread(target=talk, args=(user, incoming_msg))
     t.start()
 
-    """
-    ## test write to mongodb
-    print("ABOUT TO TEST WRITE")
-    try: 
-        print("INSIDE TRY")
-        result = mongo_collection.insert_one({"name": "test entry", "otherField": 0})
-        print("AFTER RESULT")
-        # return a friendly error if the operation fails
-    except pymongo.errors.OperationFailure:
-        print("An authentication error was received. Are you sure your database user is authorized to perform write operations?")
-        sys.exit(1)
-    else:
-        inserted_id = result.inserted_id
-        print(f"I inserted document with id {inserted_id}.")
-        print("\n")
-    """
     print("ABOUT TO UPSERT")
     upsert_response = pinecone_index.upsert(
         vectors=[("test_vec", [0.1 for i in range(1024)], {"name": "stuff"})]
@@ -92,3 +54,4 @@ def message():
 if __name__ == "__main__":
     app.debug = True
     app.run(host="0.0.0.0", port=8080)
+
