@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from dotenv import dotenv_values
 
 secrets = dotenv_values(".env")
-is_prod = secrets["IS_PROD"] != "0"
+is_prod = secrets.get("IS_PROD") != "0"
 
 # Create a Secrets Manager client
 region_name = "us-east-1"
@@ -34,7 +34,7 @@ def get_secret(secret_name):
         secret = get_secret_value_response[secret_name]
         return secret
     
-    return secrets[secret_name]
+    return secrets.get(secret_name)
 
 twilio_key = get_secret("TWILIO_AUTH_TOKEN")
 pinecone_key = get_secret("PINECONE_API_KEY")
