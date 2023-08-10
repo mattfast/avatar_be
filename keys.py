@@ -31,9 +31,9 @@ def get_secret(secret_name):
             raise e
 
         # Decrypts secret using the associated KMS key.
-        print(get_secret_value_response)
-        secret = get_secret_value_response
-        return secret
+        secret = get_secret_value_response.get('SecretString')
+        print(secret)
+        return secret.get(secret_name)
     
     return secrets.get(secret_name)
 
