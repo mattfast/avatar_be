@@ -44,7 +44,3 @@ twilio_key = get_secret("TWILIO_AUTH_TOKEN")
 pinecone_key = get_secret("PINECONE_API_KEY")
 mongo_key = get_secret("MONGODB_PASSWORD_MATTHEW")
 
-print(twilio_key)
-print(pinecone_key)
-print(mongo_key)
-
