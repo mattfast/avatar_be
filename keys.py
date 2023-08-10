@@ -12,10 +12,7 @@ is_prod = secrets.get("IS_PROD") != "0"
 
 # Create a Secrets Manager client
 region_name = "us-east-1"
-session = boto3.session.Session(
-    aws_access_key_id='ACCESS_KEY',
-    aws_secret_access_key='SECRET_KEY'
-)
+session = boto3.session.Session()
 client = session.client(
     service_name='secretsmanager',
     region_name=region_name,
