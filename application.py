@@ -22,6 +22,10 @@ class Increment:
 base = Increment()
 RETURN_VALS = ["not working", "lmao no shot", "hahahaha"]
 
+@app.route("/", methods=["GET"])
+def health_check():
+    return 'healthy!'
+
 @app.route("/bot", methods=["POST"])
 def message():
     incoming_msg = request.values.get("Body", "").lower()
