@@ -57,6 +57,6 @@ def message():
 
 if __name__ == "__main__":
     app.debug = True
-    context = ('cert.crt', 'cert.key')
+    context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
     app.run(host="0.0.0.0", port=8080, ssl_context=context)
 
