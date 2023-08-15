@@ -7,20 +7,10 @@ from twilio.twiml.messaging_response import MessagingResponse
 from logic import talk
 from db import pinecone_index
 from auth import login
+from keys import sendblue_signing_secret
 
 app = Flask(__name__)
 CORS(app)
-
-class Increment:
-    def __init__(self):
-        self.id = 0
-
-    def inc(self):
-        self.id = (self.id + 1) % 3
-
-
-base = Increment()
-RETURN_VALS = ["not working", "lmao no shot", "hahahaha"]
 
 @app.route("/", methods=["GET"])
 def health_check():
@@ -28,36 +18,46 @@ def health_check():
 
 @app.route("/bot", methods=["POST"])
 def message():
-    incoming_msg = request.values.get("Body", "").lower()
-    user_number = request.values.get("From", "")
-    resp = MessagingResponse()
+    signing_secret = request.headers.get('sb-signing-secret')
 
-    user, is_first = login(user_number)
+    print(signing_secret)
+    print(sendblue_signing_secret)
+
+    if signing_secret != sendblue_signing_secret:
+        return "signing secret invalid", 401
+    
+    body = request.json
+    print(body)
+
+    if body is None or body["number"] is None or body["content"] is None:
+        return "malformed body", 400
+
+    user, is_first = login(body["number"])
     if user is None:
         print("ERROR CREATING OR FINDING USER")
-        return Response(str(resp), mimetype="application/xml")
+        return "unable to create or find user", 500
 
     print("INCOMING MSG")
-    print(incoming_msg)
+    print(body["content"])
     print("USER NUMBER")
-    print(user_number)
+    print(body["number"])
 
-    t = threading.Thread(target=talk, args=(user, incoming_msg))
+    t = threading.Thread(target=talk, args=(user, body["content"]))
     t.start()
 
-    print("ABOUT TO UPSERT")
-    upsert_response = pinecone_index.upsert(
-        vectors=[("test_vec", [0.1 for i in range(1024)], {"name": "stuff"})]
-    )
-    print("AFTER UPSERT")
-    print(upsert_response)
+    #print("ABOUT TO UPSERT")
+    #upsert_response = pinecone_index.upsert(
+    #    vectors=[("test_vec", [0.1 for i in range(1024)], {"name": "stuff"})]
+    #)
+    #print("AFTER UPSERT")
+    #print(upsert_response)
 
-    return Response(str(resp), mimetype="application/xml")
+    return "received!", 200
 
 
 if __name__ == "__main__":
     app.debug = True
-    context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
-    app.run(host="0.0.0.0", port=8080, ssl_context=context)
-    #app.run(host="0.0.0.0", port=8080)
+    #context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
+    #app.run(host="0.0.0.0", port=8080, ssl_context=context)
+    app.run(host="0.0.0.0", port=8080)
 

@@ -43,4 +43,6 @@ def get_secret(secret_name):
 twilio_key = get_secret("TWILIO_AUTH_TOKEN")
 pinecone_key = get_secret("PINECONE_API_KEY")
 mongo_key = get_secret("MONGODB_PASSWORD_MATTHEW")
-
+sendblue_key = get_secret("SENDBLUE_API_KEY")
+sendblue_secret = get_secret("SENDBLUE_API_SECRET")
+sendblue_signing_secret = get_secret("SENDBLUE_SIGNING_SECRET")
