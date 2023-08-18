@@ -1,4 +1,5 @@
-from users import get_user, create_user
+from users import create_user, get_user
+
 
 def login(number):
     user = get_user(number)
@@ -6,5 +7,5 @@ def login(number):
 
     if is_first:
         user = create_user(number)
-        
+
     return user, is_first

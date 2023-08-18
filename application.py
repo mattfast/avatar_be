@@ -4,28 +4,29 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
-from logic import talk
-from db import pinecone_index
 from auth import login
 from keys import sendblue_signing_secret
+from logic import talk
 
 app = Flask(__name__)
 CORS(app)
 
+
 @app.route("/", methods=["GET"])
 def health_check():
-    return 'healthy!'
+    return "healthy!"
+
 
 @app.route("/bot", methods=["POST"])
 def message():
-    signing_secret = request.headers.get('sb-signing-secret')
+    signing_secret = request.headers.get("sb-signing-secret")
 
     print(signing_secret)
     print(sendblue_signing_secret)
 
     if signing_secret != sendblue_signing_secret:
         return "signing secret invalid", 401
-    
+
     body = request.json
     print(body)
 
@@ -45,19 +46,11 @@ def message():
     t = threading.Thread(target=talk, args=(user, body["content"]))
     t.start()
 
-    #print("ABOUT TO UPSERT")
-    #upsert_response = pinecone_index.upsert(
-    #    vectors=[("test_vec", [0.1 for i in range(1024)], {"name": "stuff"})]
-    #)
-    #print("AFTER UPSERT")
-    #print(upsert_response)
-
     return "received!", 200
 
 
 if __name__ == "__main__":
     app.debug = True
-    #context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
-    #app.run(host="0.0.0.0", port=8080, ssl_context=context)
+    # context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
+    # app.run(host="0.0.0.0", port=8080, ssl_context=context)
     app.run(host="0.0.0.0", port=8080)
-
