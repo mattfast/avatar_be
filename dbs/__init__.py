@@ -1,8 +1,9 @@
 import sys
 
 import certifi
-import pymongo
 import pinecone
+import pymongo
+
 from keys import mongo_key, pinecone_key
 
 # init mongodb

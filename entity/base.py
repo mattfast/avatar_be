@@ -2,9 +2,10 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 from uuid import uuid4
-from dbs.mongo import mongo_read, mongo_upsert
 
 from pydantic import BaseModel
+
+from dbs.mongo import mongo_read, mongo_upsert
 
 
 class RelationshipType(Enum):
@@ -59,14 +60,16 @@ class Entity(BaseModel):
     last_updated: datetime = datetime.now()
 
     @classmethod
-    def create_new(cls, name, relationship: RelationshipType = RelationshipType.GENERIC):
+    def create_new(
+        cls, name, relationship: RelationshipType = RelationshipType.GENERIC
+    ):
         entity_id = str(uuid4())
         entity_namespace = entity_id
         return cls(
-            id=entity_id,
+            entity_id=entity_id,
             names=[name],
             relationship=relationship,
-            memories_namespace=entity_namespace,
+            memory_namespace=entity_namespace,
         )
 
     @classmethod
@@ -85,7 +88,7 @@ class Entity(BaseModel):
             opinion=entity["opinion"],
             core_memories=entity["core_memories"],
             memory_namespace=entity["memory_namespace"],
-            created_at=entity["created_at"]
+            created_at=entity["created_at"],
         )
 
     def to_dict(self):
@@ -98,10 +101,10 @@ class Entity(BaseModel):
             "core_memories": self.core_memories,
             "memory_namespace": self.memory_namespace,
             "created_at": self.created_at,
-            "last_updated": self.last_updated
+            "last_updated": self.last_updated,
         }
 
-    def update_mongo(self) -> None:
+    def log_to_mongo(self) -> None:
         entity_dict = self.to_dict()
         mongo_upsert("Entity", {"entity_id": self.entity_id}, entity_dict)
         return
@@ -124,19 +127,21 @@ class EntityName(BaseModel):
             "name": self.name,
             "entity_id": self.entity_id,
             "created_at": self.created_at,
-            "last_updated": self.last_updated
+            "last_updated": self.last_updated,
         }
 
-    def update_mongo(self) -> None:
+    def log_to_mongo(self) -> None:
         entity_name_dict = self.to_dict()
-        mongo_upsert("EntityName", {"entity_id": self.entity_id, "name": self.name}, entity_name_dict)
+        mongo_upsert(
+            "EntityName",
+            {"entity_id": self.entity_id, "name": self.name},
+            entity_name_dict,
+        )
         return
 
 
 def find_entity_name(name: str) -> Optional[EntityName]:
     name_options = mongo_read("EntityName", {"name": name}, find_many=True)
-    if name_options is None:
-        return None
 
     option_to_use = None
     num_options = 0
@@ -145,5 +150,9 @@ def find_entity_name(name: str) -> Optional[EntityName]:
     for option in name_options:
         option_to_use = option
         num_options += 1
+
     print(f"There are {num_options} entities with the name {name}")
+    if num_options == 0:
+        return None
+
     return EntityName.from_vals(name, option_to_use["entity_id"])

@@ -36,12 +36,12 @@ Rewritten Sentence:
 class EntityExtractionPrompt(Prompt):
     name = "EntityExtractionPrompt"
     version = "0.0.1"
-    model = "fast"
-    template = """Output the subjects, if any, in the following sentence as a comma separated list. Include possessives as one entry.
-If there are no entity subjects, output NONE.
+    model = "chat"
+    template = """Output the entities, if any, in the following sentence as a comma separated list. Include possessives as one entry.
+If there are no entities, output NONE. Entities are mostly subjects. Do not include "me" as an option.
 
 Sentence: {sentence}
-Subjects:"""
+Entities:"""
 
 
 class EntityComparisonPrompt(Prompt):

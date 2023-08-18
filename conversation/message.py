@@ -1,14 +1,23 @@
-from typing import Optional, List
-from uuid import uuid4
 from datetime import datetime
-from dbs.mongo import mongo_read, mongo_write
+from typing import List, Optional
+from uuid import uuid4
+
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
+
+from dbs.mongo import mongo_read, mongo_write
 
 ROLE_TO_CLASS_DICT = {"ai": AIMessage, "human": HumanMessage, "system": SystemMessage}
 
 
 class Message:
-    def __init__(self, content: str, role: str, session_id: str, speaker: Optional[str] = None, message_id: Optional[str]=None):
+    def __init__(
+        self,
+        content: str,
+        role: str,
+        session_id: str,
+        speaker: Optional[str] = None,
+        message_id: Optional[str] = None,
+    ):
         self.content = content
         self.role = role
         self.session_id = session_id
@@ -23,7 +32,7 @@ class Message:
             "session_id": self.session_id,
             "created_time": self.created_time,
             "role": self.role,
-            "speaker": self.speaker
+            "speaker": self.speaker,
         }
 
     def log_to_mongo(self) -> None:

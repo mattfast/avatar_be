@@ -2,7 +2,7 @@ from langchain.chat_models.openai import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.llms.openai import OpenAI
 
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
 fast_model = OpenAI(

@@ -3,15 +3,16 @@ from typing import List, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
-from entity.base import Entity, EntityName, find_entity_name
+
+from common.execute import compile_and_run_prompt
+from conversation.message import Message, message_list_to_convo_prompt
 from conversation.prompts.chat import MainChatPrompt
 from conversation.prompts.entity_resolution import (
     EntityExtractionPrompt,
     ResolvePronounsPrompt,
 )
-from common.execute import compile_and_run_prompt
-from conversation.message import Message, message_list_to_convo_prompt
 from dbs.mongo import mongo_read, mongo_upsert
+from entity.base import Entity, EntityName, find_entity_name
 
 
 class Session:
@@ -42,8 +43,6 @@ class Session:
             return Session(user_num)
 
         messages = mongo_read("Messages", {"session_id": session_id}, find_many=True)
-        if messages is None:
-            return Session(user_num, session_id)
 
         last_messages = []
         last_sent_time = None
@@ -54,7 +53,9 @@ class Session:
                 last_sent_time = max(message["created_time"], last_sent_time)
             else:
                 last_sent_time = message["created_time"]
-            last_messages = [Message(message["content"], message["role"], user_name)] + last_messages
+            last_messages = [
+                Message(message["content"], message["role"], user_name)
+            ] + last_messages
 
         return cls(user_num, session_id, last_messages, last_sent_time)
 
@@ -75,25 +76,39 @@ class Session:
         user_message = Message(message, "human", self.session_id)
         user_message.log_to_mongo()
         initial_conv = message_list_to_convo_prompt(self.messages)
-        rewritten_sentence = compile_and_run_prompt(ResolvePronounsPrompt, {"conv_list": initial_conv, "last_message": message})
-        raw_entity_output = compile_and_run_prompt(EntityExtractionPrompt, {"sentence": rewritten_sentence})
+        rewritten_sentence = compile_and_run_prompt(
+            ResolvePronounsPrompt, {"conv_list": initial_conv, "last_message": message}
+        )
+
+        converted_messages = [
+            message.as_langchain_message() for message in self.messages
+        ]
+        print(rewritten_sentence)
+        raw_entity_output = compile_and_run_prompt(
+            EntityExtractionPrompt,
+            {"sentence": rewritten_sentence},
+            messages=converted_messages,
+        )
 
         print("RAW ENTITY OUTPUT")
         print(raw_entity_output)
         entities = []
         entity_list = []
         if not raw_entity_output.lower() == "none":
-            entities = [entity.strip().replace("\"'_.`", "") for entity in raw_entity_output.strip().lower().split(",")]
+            entities = [
+                entity.strip().replace("\"'_.`", "")
+                for entity in raw_entity_output.strip().lower().split(",")
+            ]
         print(entities)
         for name in entities:
             entity_name = find_entity_name(name)
             # No entity found, create new one
             if entity_name is None:
-                print(f"Couldn't find entity: {entity_name}")
+                print(f"Couldn't find entity: {name}")
                 entity = Entity.create_new(name)
                 entity_name = EntityName.from_vals(name, entity.entity_id)
-                entity.update_mongo()
-                entity_name.update_mongo()
+                entity.log_to_mongo()
+                entity_name.log_to_mongo()
             else:
                 print(f"Found Entity: {entity_name}")
                 entity = Entity.from_entity_id(entity_name.entity_id)
