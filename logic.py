@@ -24,7 +24,7 @@ def talk(user, new_message):
 
     session_id = user.get("session_id", None)
     if session_id is None:
-        curr_session = Session(user_num)
+        curr_session = Session(user)
     else:
         curr_session = Session.from_user(user)
 

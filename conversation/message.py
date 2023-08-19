@@ -49,6 +49,10 @@ class Message:
 def message_list_to_convo_prompt(conv_list: List[Message]) -> str:
     """Convert Conversation List to Prompt."""
     orig_str = "Conversation:\n"
+    if len(conv_list) == 0:
+        orig_str += "None\n"
+        return orig_str
+
     for i, element in enumerate(conv_list):
         orig_str += f"{element.format()}\n"
     return orig_str

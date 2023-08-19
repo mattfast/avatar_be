@@ -5,8 +5,9 @@ from common.prompt import Prompt
 class ResolvePronounsPrompt(Prompt):
     name = "ResolvePronounsPrompt"
     version = "0.0.1"
-    model = "fast"
+    model = "chat"
     template = """Using the context from the following conversation, rewrite the sentence provided with the relevant pronouns replaced with actual subjects. Include modifiers. If you can't identify the correct pronoun, output IDK.
+Just output the rewritten sentence. Nothing else.
 
 ##### Start Examples #####
 Example 1:
@@ -37,11 +38,11 @@ class EntityExtractionPrompt(Prompt):
     name = "EntityExtractionPrompt"
     version = "0.0.1"
     model = "chat"
-    template = """Output the entities, if any, in the following sentence as a comma separated list. Include possessives as one entry.
-If there are no entities, output NONE. Entities are mostly subjects. Do not include "me" as an option.
+    template = """Output the people, if any, in the following sentence as a comma separated list. Include possessives as one entry.
+If there are no people, output NONE. People are words/ sets of words that can be people. Do not include "me", "I" or other pronouns as an option.
 
 Sentence: {sentence}
-Entities:"""
+People:"""
 
 
 class EntityComparisonPrompt(Prompt):

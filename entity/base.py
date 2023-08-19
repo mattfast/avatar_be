@@ -11,24 +11,32 @@ from dbs.mongo import mongo_read, mongo_upsert
 class RelationshipType(Enum):
     """Relationship types."""
 
-    MOTHER = "Mother"
-    FATHER = "Father"
-    SIBLING = "Sibling"
-    GRANDPARENT = "Grandparent"
-    AUNT = "Aunt"
-    UNCLE = "Uncle"
-    COUSIN = "Cousin"
-    GENERAL_FAMILY = "General Family Member"
-    FRIEND = "Friend"
-    CLOSE_FRIEND = "Close Friend"
-    ACQUAINTANCE = "Acquaintance"
-    GENERIC = "Generic"
+    MOTHER = "mother"
+    FATHER = "father"
+    SIBLING = "sibling"
+    GRANDPARENT = "grandparent"
+    AUNT = "aunt"
+    UNCLE = "uncle"
+    COUSIN = "cousin"
+    GENERAL_FAMILY = "general family member"
+    FRIEND = "friend"
+    CLOSE_FRIEND = "close friend"
+    ACQUAINTANCE = "acquaintance"
+    GENERIC = "generic"
 
 
 relationship_list = set([r.value for r in RelationshipType])
 
 MAX_CORE_MEMORIES = 5
 # TODO: add segmenting of type of memories each person has
+
+entity_format_str = """Information about {name}:
+
+Relationship: {relationship}
+{name} Personality: {personality}
+Opinion of {name}: {opinion}
+Core memories related to {name}: {core_memories}
+"""
 
 
 class Entity(BaseModel):
@@ -43,10 +51,10 @@ class Entity(BaseModel):
     relationship: RelationshipType = RelationshipType.GENERIC
     """Relationship with person."""
 
-    personality: str = ""
+    personality: str = "unknown"
     """Personality."""
 
-    opinion: str = ""
+    opinion: str = "unknown"
     """Persons opinions on this entity."""
 
     core_memories: List[str] = []
@@ -103,6 +111,23 @@ class Entity(BaseModel):
             "created_at": self.created_at,
             "last_updated": self.last_updated,
         }
+
+    def format(self) -> str:
+        main_name = self.names[0]
+
+        core_memories_str = ""
+        for i, memory in enumerate(self.core_memories):
+            core_memories_str += f"{i}. memory\n"
+        if len(self.core_memories) == 0:
+            core_memories_str = "None"
+
+        return entity_format_str.format(
+            name=main_name,
+            relationship=self.relationship.value,
+            personality=self.personality,
+            opinion=self.opinion,
+            core_memories=core_memories_str,
+        )
 
     def log_to_mongo(self) -> None:
         entity_dict = self.to_dict()
