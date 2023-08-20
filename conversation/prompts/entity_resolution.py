@@ -41,8 +41,27 @@ class EntityExtractionPrompt(Prompt):
     template = """Output the people, if any, in the following sentence as a comma separated list. Include possessives as one entry.
 If there are no people, output NONE. People are words/ sets of words that can be people. Do not include "me", "I" or other pronouns as an option.
 
+##### Start Examples #####
+Example 1:
+Sentence: She's fine
+People (that refer to proper nouns): NONE
+
+Example 2:
+Sentence: Nancy told me about James.
+People (that refer to proper nouns): [Nancy, James]
+
+Example 3:
+Sentence: My mom told my friend, Isabelle, about her.
+People (that refer to proper nouns): [My mom, Isabelle]
+
+Example 4:
+Sentence: I told you, I'm ok.
+People (that refer to proper nouns): NONE
+
+##### End Examples #####
+
 Sentence: {sentence}
-People:"""
+People (that refer to proper nouns):"""
 
 
 class EntityComparisonPrompt(Prompt):
