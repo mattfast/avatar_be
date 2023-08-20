@@ -44,10 +44,12 @@ class MainChatPrompt(Prompt):
 {personality}
 
 You have been texting for a while with a friend. Use the context provided, your thoughts, and how you plan to respond to craft a text back to your friend responding to your their last messaeg.
-Stay true to your personality and the information you have regarding the current conversation such as people mentioned. Keep your responses generally short.
+Stay true to your personality and the information you have regarding the current conversation such as people mentioned. Keep your responses generally short and in the same writing style as the messages below.
 
 # Personal Thoughts: {thoughts}
 # Personal planned response: {planned_response}
+# Writing Examples to Match the Style of:
+{writing_examples}
 
 # Context for message
 

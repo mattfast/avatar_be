@@ -7,7 +7,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 from common.execute import compile_and_run_prompt
-from conversation.ai.personality import default_ai_session_info
+from conversation.ai.personality import default_ai_session_info, default_writing_style
 from conversation.message import Message, message_list_to_convo_prompt
 from conversation.prompts.chat import AIRespondPrompt, AIThoughtPrompt, MainChatPrompt
 from conversation.prompts.chat_update import (
@@ -25,6 +25,7 @@ from conversation.prompts.entity_resolution import (
     EntityExtractionPrompt,
     ResolvePronounsPrompt,
 )
+from conversation.utils import clean_sentence
 from dbs.mongo import mongo_read, mongo_upsert
 from entity.base import Entity, EntityName, find_entity_name
 
@@ -108,6 +109,7 @@ class Session:
         mongo_upsert("Session", {"session_id": self.session_id}, session_dict)
 
     def process_next_message(self, message: str) -> str:
+        message = clean_sentence(message)
         user_message = Message(message, "human", self.session_id)
         user_message.log_to_mongo()
         initial_conv = message_list_to_convo_prompt(self.messages)
@@ -228,6 +230,8 @@ class Session:
         vector_info = "None"
         emotions = ", ".join(emotions_list)
 
+        examples = default_writing_style
+
         chat_response = compile_and_run_prompt(
             MainChatPrompt,
             {
@@ -244,6 +248,7 @@ class Session:
                 "current_intent": current_intent,
                 "current_need": current_need,
                 "relevant_interests": relevant_interests,
+                "writing_examples": examples,
             },
             messages=deepcopy(message_list),
         )
