@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
 
+from langchain.schema import BaseMessage
 from pydantic import BaseModel
 
 from common.execute import compile_and_run_prompt
@@ -113,9 +114,10 @@ class Session:
         user_message = Message(message, "human", self.session_id)
         user_message.log_to_mongo()
         initial_conv = message_list_to_convo_prompt(self.messages)
-        rewritten_sentence = compile_and_run_prompt(
-            ResolvePronounsPrompt, {"conv_list": initial_conv, "last_message": message}
-        )
+        # rewritten_sentence = compile_and_run_prompt(
+        #     ResolvePronounsPrompt, {"conv_list": initial_conv, "last_message": message}
+        # )
+        rewritten_sentence = message
 
         emotions_list = []
         emotions_thread = threading.Thread(
@@ -178,7 +180,9 @@ class Session:
         emotions_list.extend(emotions)
         return None
 
-    def run_main_prompt(self, emotions_list, entities, prev_messages, last_message):
+    def run_main_prompt(
+        self, emotions_list, entities, prev_messages, last_message: BaseMessage
+    ):
         message_list = prev_messages + [last_message]
 
         ## General Information about Conversant
@@ -213,6 +217,7 @@ class Session:
                 "personality": self_personality,
                 "self_sentiment": self_sentiment,
                 "goals": goals,
+                "message": last_message.content,
             },
             messages=deepcopy(message_list),
         )
@@ -223,6 +228,7 @@ class Session:
                 "personality": self_personality,
                 "thoughts": thought_res,
                 "recent_people_info": recent_people_info,
+                "message": last_message.content,
             },
             messages=deepcopy(message_list),
         )
@@ -236,6 +242,7 @@ class Session:
             MainChatPrompt,
             {
                 "self_name": self_name,
+                "message": last_message.content,
                 "emotions": emotions,
                 "recent_people_info": recent_people_info,
                 "vector_info": vector_info,

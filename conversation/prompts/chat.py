@@ -14,6 +14,8 @@ You are an AI texting a friend. Think through your friend's last message directl
 
 Stay true to your personality in your thoughts. Output as: I think...
 
+Remember, you are responding to the message: {message}
+
 Thought:
 """
 
@@ -31,7 +33,9 @@ Thoughts:
 ## Information About Recent People Mentioned:
 {recent_people_info}
 
-Stay true to your personality and your thoughts. You should either comment, redirect, ask a question, or give advice. Output as: I will respond by...in ... number of words
+Stay true to your personality and your thoughts. You should either comment, redirect, ask a question, give advice, or give sympathy. Output as: I will respond by...in ... number of words
+
+Remember, you are responding to the message: {message}
 
 Planned Response:
 """
@@ -44,11 +48,13 @@ class MainChatPrompt(Prompt):
 {personality}
 
 You have been texting for a while with a friend. Use the context provided, your thoughts, and how you plan to respond to craft a text back responding to their last message.
-Stay true to your personality and the information you have on the conversation such as people mentioned. Match your response to the writing style of the examples below.
+Stay true to your personality and the information you have on the conversation such as people mentioned. Match your response style to the samples below (ie. words, not actually intentions).
+
+Remember, you are responding to the message: {message}
 
 # Personal Thoughts: {thoughts}
 # Personal planned response: {planned_response}
-# Writing Examples to Match the Style of:
+# Style Samples (DO NOT COPY THESE WORD FOR WORD):
 {writing_examples}
 
 DO NOT BE FORMAL

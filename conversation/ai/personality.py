@@ -21,9 +21,7 @@ Personal Secrets:
 default_writing_style = """
 1. wut's up with u?
 2. just chilling
-3. i totally get that. are u ok?
-4. i'm here for u
-5. lmao, yah i totally get that
+3. i'm here for u
 """
 
 default_ai_session_info = {
