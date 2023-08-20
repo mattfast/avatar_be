@@ -5,7 +5,7 @@ from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import sendblue_signing_secret
+from keys import sendblue_signing_secret, is_prod
 from logic import talk
 
 app = Flask(__name__)
@@ -51,6 +51,8 @@ def message():
 
 if __name__ == "__main__":
     app.debug = True
-    context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
-    app.run(host="0.0.0.0", port=8080, ssl_context=context)
-    #app.run(host="0.0.0.0", port=8080)
+    if is_prod:
+        context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
+        app.run(host="0.0.0.0", port=8080, ssl_context=context)
+    else:
+        app.run(host="0.0.0.0", port=8080)
