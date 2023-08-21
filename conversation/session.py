@@ -258,7 +258,7 @@ class Session:
                 "writing_examples": examples,
             },
             messages=deepcopy(message_list),
-        )
+        ).lower()
         print(chat_response)
 
         ai_message = Message(chat_response, "ai", self.session_id)
