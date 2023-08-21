@@ -33,6 +33,3 @@ async def trending_videos():
             #    print(v)
             #    print("\n")
             #print("\n")
-
-
-asyncio.run(trending_videos())

@@ -1,12 +1,14 @@
 import threading
+import asyncio
 
 from flask import Flask, Response, request
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import sendblue_signing_secret, is_prod, carrier
+from keys import sendblue_signing_secret, is_prod, carrier, lambda_token
 from logic import talk
+from tiktok import trending_videos
 
 app = Flask(__name__)
 CORS(app)
@@ -56,7 +58,23 @@ def message():
     t = threading.Thread(target=talk, args=(user, msg))
     t.start()
 
-    return "received!", 200
+    return "received!", 202
+
+@app.route("/retrieve-tiktoks", methods=["POST"])
+def retrieve_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(trending_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
+
 
 
 if __name__ == "__main__":
