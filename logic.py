@@ -6,9 +6,7 @@ from sendblue import Sendblue
 
 from conversation.session import Session
 from dbs.mongo import mongo_upsert
-from keys import sendblue_key, sendblue_secret, twilio_key
-
-sendblue = Sendblue(sendblue_key, sendblue_secret)
+from messaging import send_message
 
 
 def talk(user, new_message):
@@ -33,9 +31,5 @@ def talk(user, new_message):
     insertion_dict = {"number": user_num, "session_id": curr_session.session_id}
     mongo_upsert("Users", {"number": user_num}, insertion_dict)
 
-    sendblue.send_message(
-        user["number"],
-        {
-            "content": next_message,
-        },
-    )
+    send_message(next_message, user["number"])
+

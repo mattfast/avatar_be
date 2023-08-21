@@ -5,7 +5,7 @@ from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import sendblue_signing_secret, is_prod
+from keys import sendblue_signing_secret, is_prod, carrier
 from logic import talk
 
 app = Flask(__name__)
@@ -19,31 +19,41 @@ def health_check():
 
 @app.route("/bot", methods=["POST"])
 def message():
-    signing_secret = request.headers.get("sb-signing-secret")
 
-    print(signing_secret)
-    print(sendblue_signing_secret)
+    if carrier == "TWILIO":
+        msg = request.values.get("Body", "").lower()
+        number = request.values.get("From", "")
+    elif carrier == "SENDBLUE":
+        signing_secret = request.headers.get("sb-signing-secret")
+        print(signing_secret)
+        print(sendblue_signing_secret)
 
-    if signing_secret != sendblue_signing_secret:
-        return "signing secret invalid", 401
+        if signing_secret != sendblue_signing_secret:
+            return "signing secret invalid", 401
+        
+        body = request.json
+        if body is None:
+            return "malformed body", 400
+        
+        msg = body["content"]
+        number = body["number"]
+    else:
+        return "invalid carrier", 500
 
-    body = request.json
-    print(body)
+    if number is None or number == "" or msg is None or msg == "":
+        return "number or content not provided", 400
 
-    if body is None or body["number"] is None or body["content"] is None:
-        return "malformed body", 400
-
-    user, is_first = login(body["number"])
+    user, is_first = login(number)
     if user is None:
         print("ERROR CREATING OR FINDING USER")
         return "unable to create or find user", 500
 
     print("INCOMING MSG")
-    print(body["content"])
+    print(msg)
     print("USER NUMBER")
-    print(body["number"])
+    print(number)
 
-    t = threading.Thread(target=talk, args=(user, body["content"]))
+    t = threading.Thread(target=talk, args=(user, msg))
     t.start()
 
     return "received!", 200
