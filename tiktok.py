@@ -1,9 +1,12 @@
 
 from TikTokApi import TikTokApi
 from datetime import datetime
+import random
 
+from users import get_users
 from keys import tiktok_cookie
-from dbs.mongo import mongo_count, mongo_write_many, mongo_delete_many
+from messaging import send_message
+from dbs.mongo import mongo_count, mongo_read, mongo_write_many, mongo_delete_many
 
 DESIRED_VIDEOS = 700
 
@@ -64,3 +67,34 @@ async def delete_videos():
 
     # delete videos
     mongo_delete_many("TikToks", number=num_to_delete)
+
+
+async def send_videos():
+
+    users = list(get_users())
+    tiktoks = list(mongo_read("TikToks", {}, find_many=True))
+    print(users)
+
+    for user in users:
+        print("here")
+        if user["number"] != "+12812240743" and user["number"] != "+14803523815":
+            continue
+
+        print("here2")
+
+        tiktok = random.choice(tiktoks)
+        author = tiktok["author"]
+        videoId = tiktok["videoId"]
+        url = f"https://www.tiktok.com/@{author}/video/{videoId}"
+
+        print(url)
+
+        send_message("yo, thought you'd like this:", user["number"])
+        send_message(url, user["number"])
+
+
+
+
+
+    
+
