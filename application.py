@@ -8,7 +8,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from auth import login
 from keys import sendblue_signing_secret, is_prod, carrier, lambda_token
 from logic import talk
-from tiktok import trending_videos
+from tiktok import trending_videos, delete_videos
 
 app = Flask(__name__)
 CORS(app)
@@ -75,6 +75,20 @@ def retrieve_tiktoks():
 
     return "tiktok job initiated", 202
 
+@app.route("/delete-tiktoks", methods=["POST"])
+def delete_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(delete_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
 
 
 if __name__ == "__main__":
