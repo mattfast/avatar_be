@@ -17,6 +17,7 @@ class Message:
         session_id: str,
         speaker: Optional[str] = None,
         message_id: Optional[str] = None,
+        entity_ids: Optional[List] = None,
     ):
         self.content = content
         self.role = role
@@ -24,6 +25,7 @@ class Message:
         self.speaker = speaker or role
         self.created_time = datetime.now()
         self.message_id = message_id or str(uuid4())
+        self.entity_ids = entity_ids or []
 
     def to_dict(self) -> dict:
         return {
@@ -33,7 +35,11 @@ class Message:
             "created_time": self.created_time,
             "role": self.role,
             "speaker": self.speaker,
+            "entity_ids": self.entity_ids,
         }
+
+    def add_entity_ids(self, entity_ids: List[str]) -> None:
+        self.entity_ids.extend(entity_ids)
 
     def log_to_mongo(self) -> None:
         message_dict = self.to_dict()

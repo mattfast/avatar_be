@@ -1,3 +1,5 @@
+import threading
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
@@ -5,6 +7,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
+from common.metadata import METADATA_ENTITY_KEY, MetadataMixIn
 from dbs.mongo import mongo_read, mongo_upsert
 
 
@@ -34,34 +37,44 @@ entity_format_str = """Information about {name}:
 
 Relationship: {relationship}
 {name} Personality: {personality}
-Opinion of {name}: {opinion}
-Core memories related to {name}: {core_memories}
+Core sentiment towards {name}: {core_sentiment}
 """
 
+RELATIONSHIP_KEY = "relationship"
+PERSONALITY_KEY = "personality"
+SENTIMENT_KEY = "sentiment"
 
-class Entity(BaseModel):
+UPDATE_COUNT_THRESHOLD = 5
+
+default_user_reflection_dict = {
+    RELATIONSHIP_KEY: RelationshipType.GENERIC,
+    SENTIMENT_KEY: "neutral",
+}
+
+
+class Entity(BaseModel, MetadataMixIn):
     """Class for Entity. To Mirror Mongo."""
 
     entity_id: str
     """Entity ID."""
 
+    user_id: str
+
     names: List[str] = []
     """Should map to entity name key."""
 
-    relationship: RelationshipType = RelationshipType.GENERIC
-    """Relationship with person."""
+    info_dict: dict = {
+        PERSONALITY_KEY: "unknown",
+    }
+    """Information about the entity."""
 
-    personality: str = "unknown"
-    """Personality."""
+    related_entities: List[str] = []
+    """Related Entity IDs."""
 
-    opinion: str = "unknown"
-    """Persons opinions on this entity."""
+    user_reflection_dict = default_user_reflection_dict
+    """Dictionary to reference for reflection."""
 
-    core_memories: List[str] = []
-    """Memories Associated with this Entity."""
-
-    memory_namespace: str = ""
-    """Pinecone namespace associated with memories for this Entity."""
+    mentions: int = 0
 
     created_at: datetime = datetime.now()
 
@@ -69,15 +82,19 @@ class Entity(BaseModel):
 
     @classmethod
     def create_new(
-        cls, name, relationship: RelationshipType = RelationshipType.GENERIC
+        cls,
+        name,
+        user_id: str,
+        relationship: RelationshipType = RelationshipType.GENERIC,
     ):
         entity_id = str(uuid4())
-        entity_namespace = entity_id
+        user_reflection_dict = default_user_reflection_dict
+        user_reflection_dict.update({RELATIONSHIP_KEY: relationship})
         return cls(
             entity_id=entity_id,
+            user_id=user_id,
             names=[name],
-            relationship=relationship,
-            memory_namespace=entity_namespace,
+            user_reflection_dict=user_reflection_dict,
         )
 
     @classmethod
@@ -88,46 +105,82 @@ class Entity(BaseModel):
         entity = mongo_read("Entity", {"entity_id": entity_id})
         if entity is None:
             raise ValueError(f"Entity ID {entity_id} not found in Mongo")
+        user_reflection_dict = entity["reflection_dict"]
+        user_reflection_dict[RELATIONSHIP_KEY] = RelationshipType(
+            user_reflection_dict.get(RELATIONSHIP_KEY, RelationshipType.GENERIC.value)
+        )
         return cls(
             entity_id=entity["entity_id"],
+            user_id=entity["user_id"],
             names=entity["names"],
-            relationship=RelationshipType(entity["relationship"]),
-            personality=entity["personality"],
-            opinion=entity["opinion"],
-            core_memories=entity["core_memories"],
-            memory_namespace=entity["memory_namespace"],
+            info_dict=entity["info_dict"],
             created_at=entity["created_at"],
+            user_reflection_dict=user_reflection_dict,
         )
+
+    def convert_reflection_dict_for_mongo(self) -> dict:
+        reflection_dict = deepcopy(self.user_reflection_dict)
+        reflection_dict[RELATIONSHIP_KEY] = self.user_reflection_dict.get(
+            RELATIONSHIP_KEY
+        ).value
+        return reflection_dict
 
     def to_dict(self):
         return {
             "entity_id": self.entity_id,
             "names": self.names,
-            "relationship": self.relationship.value,
-            "personality": self.personality,
-            "opinion": self.opinion,
-            "core_memories": self.core_memories,
-            "memory_namespace": self.memory_namespace,
+            "info_dict": self.info_dict,
             "created_at": self.created_at,
             "last_updated": self.last_updated,
+            "user_reflection_dict": self.convert_reflection_dict_for_mongo(),
         }
+
+    def should_update(self) -> bool:
+        return self.mentions > UPDATE_COUNT_THRESHOLD
+
+    def update(self):
+        # Reset Mentions
+        self.mentions = 0
+
+        # TODO: implement the update
+
+        # Log changes to entity in mongo
+        self.log_to_mongo()
+        return None
+
+    def increment_mentions(self, is_first_time: bool = False):
+        self.mentions += 1
+        if self.should_update() or is_first_time:
+            update_thread = threading.Thread(target=self.update)
+            update_thread.start()
+
+    @property
+    def relationship(self):
+        return self.info_dict.get(RELATIONSHIP_KEY, RelationshipType.GENERIC)
+
+    @property
+    def personality(self):
+        return self.info_dict.get(PERSONALITY_KEY)
 
     def format(self) -> str:
         main_name = self.names[0]
-
-        core_memories_str = ""
-        for i, memory in enumerate(self.core_memories):
-            core_memories_str += f"{i}. memory\n"
-        if len(self.core_memories) == 0:
-            core_memories_str = "None"
+        sentiment = self.user_reflection_dict.get(SENTIMENT_KEY, "neutral")
 
         return entity_format_str.format(
             name=main_name,
             relationship=self.relationship.value,
             personality=self.personality,
-            opinion=self.opinion,
-            core_memories=core_memories_str,
+            core_sentiment=sentiment,
         )
+
+    @property
+    def metadata_key(self) -> str:
+        return METADATA_ENTITY_KEY
+
+    def modify_metadata_dict(self, metadata: dict) -> dict:
+        curr_entity_ids = metadata.get(self.metadata_key, [])
+        metadata[self.metadata_key] = curr_entity_ids.extend(self.entity_id)
+        return metadata
 
     def log_to_mongo(self) -> None:
         entity_dict = self.to_dict()

@@ -5,10 +5,19 @@ from typing import List, Optional
 from uuid import uuid4
 
 from langchain.schema import BaseMessage
-from pydantic import BaseModel
 
+from ai.personality import default_ai_session_info, default_writing_style
 from common.execute import compile_and_run_prompt
-from conversation.ai.personality import default_ai_session_info, default_writing_style
+from common.memory import MemoryType
+from common.metadata import (
+    METADATA_ACCESSED_KEY,
+    METADATA_INSERT_TIME_KEY,
+    METADATA_MEMORY_TYPE_KEY,
+    METADATA_SESSION_ID_KEY,
+    METADATA_USER_ID_KEY,
+    Metadata,
+    MetadataMixIn,
+)
 from conversation.message import Message, message_list_to_convo_prompt
 from conversation.prompts.chat import AIRespondPrompt, AIThoughtPrompt, MainChatPrompt
 from conversation.prompts.chat_update import (
@@ -23,11 +32,13 @@ from conversation.prompts.emotion_extraction import (
     TopicSentimentPrompt,
 )
 from conversation.prompts.entity_resolution import (
-    EntityExtractionPrompt,
-    ResolvePronounsPrompt,
+    IdentifyAmbiguousPersonsPrompt,
+    ProperNounExtraction,
+    ResolveReferencesPrompt,
 )
-from conversation.utils import clean_sentence
+from conversation.utils import clean_json_list_output, clean_sentence
 from dbs.mongo import mongo_read, mongo_upsert
+from dbs.pinecone import upsert_piece
 from entity.base import Entity, EntityName, find_entity_name
 
 default_user_session_info = {
@@ -39,7 +50,7 @@ default_user_session_info = {
 
 
 # Need an onboarding session -> ask for names, etc...
-class Session:
+class Session(MetadataMixIn):
     def __init__(
         self,
         user,
@@ -55,6 +66,14 @@ class Session:
         self.session_info = session_info or default_ai_session_info
         self.session_user_info = session_user_info or default_user_session_info
         self.last_message_sent = last_message_sent or datetime.now()
+
+    @property
+    def metadata_key(self) -> str:
+        return METADATA_SESSION_ID_KEY
+
+    def modify_metadata_dict(self, metadata: dict) -> dict:
+        metadata[self.metadata_key] = self.session_id
+        return metadata
 
     @classmethod
     def from_user(cls, user):
@@ -109,15 +128,47 @@ class Session:
         session_dict = self.to_dict()
         mongo_upsert("Session", {"session_id": self.session_id}, session_dict)
 
+    def extract_and_process_entities(self, prev_messages, message) -> List[Entity]:
+        """Extract and process entities."""
+        print(message)
+        raw_entity_output = compile_and_run_prompt(
+            ProperNounExtraction,
+            {"sentence": message},
+            messages=deepcopy(prev_messages),
+        )
+
+        print("RAW ENTITY OUTPUT")
+        print(raw_entity_output)
+        entity_list = []
+        entities = clean_json_list_output(raw_entity_output)
+
+        # Only choose top 5 entities
+        entities = entities[:4]
+        print(entities)
+        for name in entities:
+            entity_name = find_entity_name(name)
+            is_first_mention = entity_name is None
+
+            # No entity found, create new one
+            if is_first_mention:
+                print(f"Couldn't find entity: {name}")
+                entity = Entity.create_new(name)
+                entity_name = EntityName.from_vals(name, entity.entity_id)
+                entity_name.log_to_mongo()
+            else:
+                print(f"Found Entity: {entity_name}")
+                entity = Entity.from_entity_id(entity_name.entity_id)
+
+            entity.increment_mentions(is_first_time=is_first_mention)
+            entity_list.append(entity)
+
+        return entity_list
+
     def process_next_message(self, message: str) -> str:
         message = clean_sentence(message)
         user_message = Message(message, "human", self.session_id)
         user_message.log_to_mongo()
         initial_conv = message_list_to_convo_prompt(self.messages)
-        # rewritten_sentence = compile_and_run_prompt(
-        #     ResolvePronounsPrompt, {"conv_list": initial_conv, "last_message": message}
-        # )
-        rewritten_sentence = message
 
         emotions_list = []
         emotions_thread = threading.Thread(
@@ -126,40 +177,8 @@ class Session:
         emotions_thread.start()
 
         prev_messages = [message.as_langchain_message() for message in self.messages]
-        print(rewritten_sentence)
-        raw_entity_output = compile_and_run_prompt(
-            EntityExtractionPrompt,
-            {"sentence": rewritten_sentence},
-            messages=deepcopy(prev_messages),
-        )
 
-        print("RAW ENTITY OUTPUT")
-        print(raw_entity_output)
-        entities = []
-        entity_list = []
-        if "none" not in raw_entity_output.lower():
-            entities = [
-                entity.strip().replace("\"'_.`", "")
-                for entity in raw_entity_output.strip().lower().split(",")
-            ]
-
-        # Only choose top 5 entities
-        entities = entities[:4]
-        print(entities)
-        for name in entities:
-            entity_name = find_entity_name(name)
-            # No entity found, create new one
-            if entity_name is None:
-                print(f"Couldn't find entity: {name}")
-                entity = Entity.create_new(name)
-                entity_name = EntityName.from_vals(name, entity.entity_id)
-                entity.log_to_mongo()
-                entity_name.log_to_mongo()
-            else:
-                print(f"Found Entity: {entity_name}")
-                entity = Entity.from_entity_id(entity_name.entity_id)
-
-            entity_list.append(entity)
+        entity_list = self.extract_and_process_entities(prev_messages, message)
 
         emotions_thread.join()
 
@@ -274,9 +293,34 @@ class Session:
         self.log_to_mongo()
         return chat_response
 
+    def process_message_as_memory(
+        self, prev_messages, last_user_message, ai_message
+    ) -> None:
+        # First determine if this message should be saved as a memory
+        content_to_save = ""
+
+        # If so, the save it the metadata
+        memory_metadata = Metadata()
+        curr_time_secs = datetime.now().timestamp()
+        memory_metadata.add_from_mixin(self)
+        memory_metadata.add_value(METADATA_MEMORY_TYPE_KEY, MemoryType.GENERIC.value)
+        memory_metadata.add_value(METADATA_ACCESSED_KEY, curr_time_secs)
+        memory_metadata.add_value(METADATA_INSERT_TIME_KEY, curr_time_secs)
+        memory_metadata.add_value(METADATA_USER_ID_KEY, self.user["user_id"])
+
+        # Add Entity Information
+
+        # Save Memory
+        upsert_piece(content_to_save, memory_metadata)
+
     def async_update_chat_info(
         self, prev_messages, last_user_message, ai_message
     ) -> None:
+        memory_thread = threading.Thread(
+            target=self.process_message_as_memory,
+            args=[prev_messages, last_user_message, ai_message],
+        )
+        memory_thread.start()
         personality = self.session_info.get("personality")
         self_name = self.session_info.get("name")
         non_ai_messages = prev_messages + [last_user_message]
@@ -287,6 +331,11 @@ class Session:
             {"self_name": self_name, "personality": personality},
             messages=deepcopy(all_messages),
         )
+
+        # Not a single word answer, fall on a default
+        if len(sentiment_res.split(" ")) > 4:
+            sentiment_res = "neutral"
+
         reflection_res = compile_and_run_prompt(
             AIReflectionPrompt,
             {

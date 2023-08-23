@@ -24,12 +24,10 @@ default_writing_style = """
 3. i'm here for u
 """
 
+default_name = "Justin"
 default_ai_session_info = {
-    "name": "Justin",
+    "name": default_name,
     "personality": default_personality,
     "sentiment": "neutral",
     "goal": default_intent,
 }
-
-personality_format_str = """
-"""

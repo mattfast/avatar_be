@@ -20,6 +20,16 @@ def clean_sentence(sentence):
     return copy
 
 
+def clean_json_list_output(raw_output):
+    return_vals = []
+    if "none" not in raw_output.lower():
+        return_vals = [
+            return_val.strip().replace("\"'_.`", "")
+            for return_val in raw_output.strip("[]").lower().split(",")
+        ]
+    return return_vals
+
+
 common_replacements = {
     "wbu": "what about you",
     "u": "you",
