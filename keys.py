@@ -41,10 +41,15 @@ def get_secret(secret_name):
     return secrets.get(secret_name)
 
 
+carrier = get_secret("CARRIER")
 twilio_key = get_secret("TWILIO_AUTH_TOKEN")
+twilio_account_sid = get_secret("TWILIO_ACCOUNT_SID")
+twilio_number = get_secret("TWILIO_NUMBER")
 pinecone_key = get_secret("PINECONE_API_KEY")
 mongo_key = get_secret("MONGODB_PASSWORD_MATTHEW")
 sendblue_key = get_secret("SENDBLUE_API_KEY")
 sendblue_secret = get_secret("SENDBLUE_API_SECRET")
 sendblue_signing_secret = get_secret("SENDBLUE_SIGNING_SECRET")
 openai_api_key = get_secret("OPENAI_API_KEY")
+tiktok_cookie = get_secret("TIKTOK_COOKIE")
+lambda_token = get_secret("LAMBDA_AUTH_TOKEN")

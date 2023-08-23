@@ -1,3 +1,4 @@
+import asyncio
 import threading
 
 from flask import Flask, Response, request
@@ -5,8 +6,9 @@ from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import is_prod, sendblue_signing_secret
+from keys import carrier, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
+from tiktok import delete_videos, send_videos, trending_videos
 
 app = Flask(__name__)
 CORS(app)
@@ -19,34 +21,92 @@ def health_check():
 
 @app.route("/bot", methods=["POST"])
 def message():
-    signing_secret = request.headers.get("sb-signing-secret")
 
-    print(signing_secret)
-    print(sendblue_signing_secret)
+    if carrier == "TWILIO":
+        msg = request.values.get("Body", "").lower()
+        number = request.values.get("From", "")
+    elif carrier == "SENDBLUE":
+        signing_secret = request.headers.get("sb-signing-secret")
+        print(signing_secret)
+        print(sendblue_signing_secret)
 
-    if signing_secret != sendblue_signing_secret:
-        return "signing secret invalid", 401
+        if signing_secret != sendblue_signing_secret:
+            return "signing secret invalid", 401
 
-    body = request.json
-    print(body)
+        body = request.json
+        if body is None:
+            return "malformed body", 400
 
-    if body is None or body["number"] is None or body["content"] is None:
-        return "malformed body", 400
+        msg = body["content"]
+        number = body["number"]
+    else:
+        return "invalid carrier", 500
 
-    user, is_first = login(body["number"])
+    if number is None or number == "" or msg is None or msg == "":
+        return "number or content not provided", 400
+
+    user, is_first = login(number)
     if user is None:
         print("ERROR CREATING OR FINDING USER")
         return "unable to create or find user", 500
 
     print("INCOMING MSG")
-    print(body["content"])
+    print(msg)
     print("USER NUMBER")
-    print(body["number"])
+    print(number)
 
-    t = threading.Thread(target=talk, args=(user, body["content"]))
+    t = threading.Thread(target=talk, args=(user, msg))
     t.start()
 
-    return "received!", 200
+    return "received!", 202
+
+
+@app.route("/retrieve-tiktoks", methods=["POST"])
+def retrieve_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(trending_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
+
+
+@app.route("/delete-tiktoks", methods=["POST"])
+def delete_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(delete_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
+
+
+@app.route("/send-tiktoks", methods=["POST"])
+def send_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(send_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
 
 
 if __name__ == "__main__":
