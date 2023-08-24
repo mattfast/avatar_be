@@ -141,7 +141,10 @@ def mongo_dedupe(collection, filter):
                 print("DELETING")
                 ids_to_delete.append(entry["_id"])
 
-        result = mongo_db[collection].delete_many({ "_id": { "$in": ids_to_delete } })
+        if len(ids_to_delete) > 0:
+            result = mongo_db[collection].delete_many({ "_id": { "$in": ids_to_delete } })
+        else:
+            result = None
 
     except pymongo.errors.OperationFailure:
         print("MONGO DEDUPE ERROR")
