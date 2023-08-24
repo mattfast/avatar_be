@@ -1,12 +1,19 @@
-
+from sendblue import Sendblue
 from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
-from sendblue import Sendblue
 
-from keys import twilio_account_sid, twilio_key, twilio_number, sendblue_key, sendblue_secret, carrier
+from keys import (
+    carrier,
+    sendblue_key,
+    sendblue_secret,
+    twilio_account_sid,
+    twilio_key,
+    twilio_number,
+)
 
 client = Client(twilio_account_sid, twilio_key)
 sendblue = Sendblue(sendblue_key, sendblue_secret)
+
 
 def send_message(message, number):
     try:

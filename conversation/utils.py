@@ -1,13 +1,6 @@
 import re
 from copy import deepcopy
-
-
-def list_to_convo_prompt(conv_list) -> str:
-    """Convert Conversation List to Prompt."""
-    orig_str = "Conversation:\n"
-    for i, element in enumerate(conv_list):
-        orig_str += f"{element.fo}"
-    return orig_str
+from typing import List
 
 
 def clean_sentence(sentence):
@@ -18,6 +11,16 @@ def clean_sentence(sentence):
             rf"\b{replacement}\b", common_replacements[replacement], copy, flags=re.I
         )
     return copy
+
+
+def clean_json_list_output(raw_output):
+    return_vals = []
+    if "none" not in raw_output.lower():
+        return_vals = [
+            return_val.strip().replace("\"'_.`", "")
+            for return_val in raw_output.strip("[]").lower().split(",")
+        ]
+    return return_vals
 
 
 common_replacements = {
@@ -33,3 +36,17 @@ common_replacements = {
     "abt": "about",
     "idk": "i don't know",
 }
+
+
+def format_memories(memories: List[dict]) -> str:
+    if len(memories) == 0:
+        return "None"
+
+    print("FETCHED MEMORIES")
+    print(memories)
+
+    format_str = ""
+    for i, match in enumerate(memories):
+        match_metadata = match.get("metadata", {})
+        format_str += f"Memory {i+1}: {match_metadata.get('content', 'None')}\n"
+    return format_str

@@ -1,17 +1,24 @@
+import functools
+import random
+from datetime import datetime
 
 from TikTokApi import TikTokApi
-from datetime import datetime
-import random
-import functools
 
 from common.execute import compile_and_run_prompt
 from conversation.prompts.tiktok import TagTikToksPrompt
-from users import get_users
+from dbs.mongo import (
+    mongo_bulk_update,
+    mongo_count,
+    mongo_delete_many,
+    mongo_read,
+    mongo_write_many,
+)
 from keys import tiktok_cookie
 from messaging import send_message
-from dbs.mongo import mongo_count, mongo_read, mongo_write_many, mongo_delete_many, mongo_bulk_update
+from users import get_users
 
 DESIRED_VIDEOS = 700
+
 
 async def trending_videos():
     print("about to enter async")
@@ -36,19 +43,19 @@ async def trending_videos():
                         {
                             "videoId": d["id"],
                             "author": d["author"]["uniqueId"],
-                            "description": d["desc"], 
+                            "description": d["desc"],
                             "shareCount": d["stats"]["shareCount"],
                             "playCount": d["stats"]["playCount"],
                             "commentCount": d["stats"]["commentCount"],
                             "createdAt": now,
-                            "updatedAt": now
+                            "updatedAt": now,
                         }
                     )
                     print(video)
                     print("\n")
             except:
                 print("error fetching videos")
-            
+
             # find num videos in db
             print("ABOUT TO WRITE")
             if len(entries) > 0:
@@ -58,8 +65,11 @@ async def trending_videos():
             print("NEW NUM VIDEOS")
             print(num_videos)
 
-            if num_videos < DESIRED_VIDEOS: continue
-            else: break
+            if num_videos < DESIRED_VIDEOS:
+                continue
+            else:
+                break
+
 
 async def delete_videos():
     print("about to delete videos")
@@ -99,7 +109,7 @@ async def send_videos():
 async def tag_videos():
 
     print("tagging vids")
-    tiktoks = list(mongo_read("TikToks", { "tags": { "$exists": False }}, find_many=True))
+    tiktoks = list(mongo_read("TikToks", {"tags": {"$exists": False}}, find_many=True))
     print("TIKTOKS TO TAG:")
     print(len(tiktoks))
     query_list = []
@@ -107,31 +117,26 @@ async def tag_videos():
     for i in range(0, len(tiktoks), 15):
         upper_bound = min(i + 15, len(tiktoks))
         batch = tiktoks[i:upper_bound]
-        video_desc_str = functools.reduce(lambda a, b: a + f"Video {b['videoId']}: {b['description']}\n", batch, "")
-        #print(video_desc_str)
-        res = compile_and_run_prompt(TagTikToksPrompt, { "video_descriptions": video_desc_str })
+        video_desc_str = functools.reduce(
+            lambda a, b: a + f"Video {b['videoId']}: {b['description']}\n", batch, ""
+        )
+        # print(video_desc_str)
+        res = compile_and_run_prompt(
+            TagTikToksPrompt, {"video_descriptions": video_desc_str}
+        )
         res_list = res.split("\n")
-        res_list = [i for i in res_list if i] # remove empty strings
+        res_list = [i for i in res_list if i]  # remove empty strings
         for v in res_list:
             try:
                 terms = v.split(":")
                 videoId = terms[0].split(" ")[1]
                 tag = terms[1][1:]
-                query_list.append({ 'videoId': videoId })
-                update_list.append({ '$set': {  'tags' : [tag] } })
+                query_list.append({"videoId": videoId})
+                update_list.append({"$set": {"tags": [tag]}})
             except:
                 print("ERROR: output not formatted correctly")
-    
+
     print(query_list)
     print(update_list)
-    
+
     mongo_bulk_update("TikToks", query_list, update_list)
-
-
-    
-
-
-
-
-    
-

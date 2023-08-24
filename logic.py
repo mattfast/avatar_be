@@ -1,5 +1,5 @@
 import threading
-import uuid
+from uuid import uuid4
 
 from flask import Flask, Response, request
 from sendblue import Sendblue
@@ -20,6 +20,12 @@ def talk(user, new_message):
     print("NEW MESSAGE")
     print(new_message)
 
+    # If no user id, then create one before getting a session
+    if user.get("user_id", None) is None:
+        id = str(uuid4())
+        mongo_upsert("Users", {"number": user_num}, {"user_id": id})
+        user["user_id"] = id
+
     session_id = user.get("session_id", None)
     if session_id is None:
         curr_session = Session(user)
@@ -32,4 +38,3 @@ def talk(user, new_message):
     mongo_upsert("Users", {"number": user_num}, insertion_dict)
 
     send_message(next_message, user["number"])
-

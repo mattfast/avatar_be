@@ -1,5 +1,6 @@
 from common.prompt import Prompt
 
+
 ## Pronoun resolution also needs to resolve more vague phrases. ie "that chick" or "that person"
 class TagTikToksPrompt(Prompt):
     name = "TagTikToksPrompt"

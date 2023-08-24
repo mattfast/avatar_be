@@ -1,14 +1,14 @@
-import threading
 import asyncio
+import threading
 
 from flask import Flask, Response, request
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import sendblue_signing_secret, is_prod, carrier, lambda_token
+from keys import carrier, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
-from tiktok import trending_videos, delete_videos, send_videos, tag_videos
+from tiktok import delete_videos, send_videos, tag_videos, trending_videos
 
 app = Flask(__name__)
 CORS(app)
@@ -21,7 +21,6 @@ def health_check():
 
 @app.route("/bot", methods=["POST"])
 def message():
-
     if carrier == "TWILIO":
         msg = request.values.get("Body", "").lower()
         number = request.values.get("From", "")
@@ -32,11 +31,11 @@ def message():
 
         if signing_secret != sendblue_signing_secret:
             return "signing secret invalid", 401
-        
+
         body = request.json
         if body is None:
             return "malformed body", 400
-        
+
         msg = body["content"]
         number = body["number"]
     else:
@@ -60,6 +59,7 @@ def message():
 
     return "received!", 202
 
+
 @app.route("/retrieve-tiktoks", methods=["POST"])
 def retrieve_tiktoks():
     lambda_token_header = request.headers.get("lambda-auth-token")
@@ -74,6 +74,7 @@ def retrieve_tiktoks():
     t.start()
 
     return "tiktok job initiated", 202
+
 
 @app.route("/delete-tiktoks", methods=["POST"])
 def delete_tiktoks():
@@ -90,6 +91,7 @@ def delete_tiktoks():
 
     return "tiktok job initiated", 202
 
+
 @app.route("/send-tiktoks", methods=["POST"])
 def send_tiktoks():
     lambda_token_header = request.headers.get("lambda-auth-token")
@@ -104,6 +106,7 @@ def send_tiktoks():
     t.start()
 
     return "tiktok job initiated", 202
+
 
 @app.route("/tag-tiktoks", methods=["POST"])
 def tag_tiktoks():
@@ -124,7 +127,10 @@ def tag_tiktoks():
 if __name__ == "__main__":
     app.debug = True
     if is_prod:
-        context = ('/etc/letsencrypt/live/milk-be.com/fullchain.pem', '/etc/letsencrypt/live/milk-be.com/privkey.pem')
+        context = (
+            "/etc/letsencrypt/live/milk-be.com/fullchain.pem",
+            "/etc/letsencrypt/live/milk-be.com/privkey.pem",
+        )
         app.run(host="0.0.0.0", port=8080, ssl_context=context)
     else:
         app.run(host="0.0.0.0", port=8080)
