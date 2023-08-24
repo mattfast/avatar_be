@@ -8,7 +8,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from auth import login
 from keys import sendblue_signing_secret, is_prod, carrier, lambda_token
 from logic import talk
-from tiktok import trending_videos, delete_videos, send_videos, tag_videos
+from tiktok.logic import trending_videos, delete_videos, send_videos, tag_videos
 
 app = Flask(__name__)
 CORS(app)
