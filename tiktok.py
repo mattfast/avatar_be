@@ -23,7 +23,7 @@ async def trending_videos():
         while True:
             num_videos = mongo_count("TikToks")
             #num_to_fetch = DESIRED_VIDEOS - num_videos
-            num_to_fetch = 30
+            num_to_fetch = 100
 
             print("NUM VIDEOS AND TO FETCH")
             print(num_videos)
