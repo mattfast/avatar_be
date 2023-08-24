@@ -9,7 +9,7 @@ from conversation.prompts.tiktok import TagTikToksPrompt
 from users import get_users
 from keys import tiktok_ms_token
 from messaging import send_message
-from dbs.mongo import mongo_count, mongo_read, mongo_write_many, mongo_delete_many, mongo_bulk_update
+from dbs.mongo import mongo_count, mongo_read, mongo_delete_many, mongo_bulk_update
 
 DESIRED_VIDEOS = 700
 
@@ -17,7 +17,8 @@ async def trending_videos():
     print("about to enter async")
     async with TikTokApi() as api:
         print("creating session")
-        await api.create_sessions(ms_tokens=[tiktok_ms_token])
+        #await api.create_sessions(ms_tokens=[tiktok_ms_token])
+        await api.create_sessions(num_sessions=1)
         print("session created")
         while True:
             num_videos = mongo_count("TikToks")
@@ -128,11 +129,4 @@ async def tag_videos():
     
     mongo_bulk_update("TikToks", query_list, update_list)
 
-
-    
-
-
-
-
-    
 
