@@ -23,7 +23,7 @@ mongo_db = client["Prod"]
 
 
 # init pinecone db
-pinecone.init(api_key=pinecone_key, environment="gcp-starter")
+pinecone.init(api_key=pinecone_key, environment="asia-southeast1-gcp-free")
 pinecone_index = pinecone.Index("test-index")
 print("PINECONE INDEX")
 print(pinecone_index)

@@ -1,5 +1,6 @@
 class Prompt:
     name: str = ""
+    verbose: bool = False
     model: str = "chat"
     version: str = "0.0"
     template: str = ""

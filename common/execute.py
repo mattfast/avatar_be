@@ -15,15 +15,20 @@ def compile_and_run_prompt(prompt_cls, dict_options: dict, **kwargs):
         final_prompt = prompt_cls(dict_options)
     except:
         raise ValueError("Missing dictionary Keys")
-    print(final_prompt.model)
     if final_prompt.model == "chat":
-        return run_chat_prompt(final_prompt.template, **kwargs)
+        return run_chat_prompt(
+            final_prompt.template, verbose=final_prompt.verbose, **kwargs
+        )
+
+    if final_prompt.verbose:
+        print(final_prompt.template)
     return clean_response(MODEL_DICT[prompt_cls.model](final_prompt.template))
 
 
-def run_chat_prompt(prompt: str, **kwargs):
+def run_chat_prompt(prompt: str, verbose: bool = False, **kwargs):
     messages_to_use = kwargs.get("messages", [])
     system_message = SystemMessage(content=prompt)
     messages_to_use.append(system_message)
-    print(messages_to_use)
+    if verbose:
+        print(messages_to_use)
     return clean_response(MODEL_DICT["chat"](messages_to_use).content)

@@ -1,6 +1,14 @@
+from abc import abstractmethod
+
 import pymongo
 
 from dbs import mongo_db
+
+
+class MongoMixin:
+    @abstractmethod
+    def log_to_mongo(self):
+        return None
 
 
 def mongo_write(collection, entry):
@@ -14,6 +22,7 @@ def mongo_write(collection, entry):
 
     print(result)
     return result
+
 
 def mongo_write_many(collection, entries):
     try:
@@ -31,9 +40,13 @@ def mongo_write_many(collection, entries):
 def mongo_upsert(collection, query, update, update_many: bool = False):
     try:
         if not update_many:
-            result = mongo_db[collection].update_one(query, {"$set": update}, upsert=True)
+            result = mongo_db[collection].update_one(
+                query, {"$set": update}, upsert=True
+            )
         else:
-            result = mongo_db[collection].update_many(query, {"$set": update}, upsert=True)
+            result = mongo_db[collection].update_many(
+                query, {"$set": update}, upsert=True
+            )
     except pymongo.errors.OperationFailure:
         print("MONGO UPDATE ERROR")
         print(f"Collection: {collection}")
@@ -65,7 +78,7 @@ def mongo_read(collection, filter, find_many: bool = False):
     return result
 
 
-def mongo_count(collection, query = None):
+def mongo_count(collection, query=None):
     try:
         result = mongo_db[collection].count(query)
     except pymongo.errors.OperationFailure:
@@ -77,16 +90,22 @@ def mongo_count(collection, query = None):
     print(result)
     return result
 
-def mongo_delete_many(collection, number = 100):
+
+def mongo_delete_many(collection, number=100):
     try:
-        to_delete = mongo_db[collection].find().limit(number).sort("createdAt", pymongo.ASCENDING)
+        to_delete = (
+            mongo_db[collection]
+            .find()
+            .limit(number)
+            .sort("createdAt", pymongo.ASCENDING)
+        )
         ids_to_delete = []
         for item in to_delete:
             ids_to_delete.append(item["_id"])
-        
+
         print("about to delete")
         print(ids_to_delete)
-        result = mongo_db[collection].delete_many({ "_id": { "$in": ids_to_delete } })
+        result = mongo_db[collection].delete_many({"_id": {"$in": ids_to_delete}})
         print("deleted")
         print(result)
     except pymongo.errors.OperationFailure:
@@ -109,11 +128,11 @@ def mongo_bulk_update(collection, query_list, update_list):
             bulk.find(query_list[i]).update(update_list[i])
             counter += 1
 
-            if (counter % 500 == 0):
+            if counter % 500 == 0:
                 result = bulk.execute()
                 bulk = mongo_db[collection].initialize_ordered_bulk_op()
 
-        if (counter != 0):
+        if counter != 0:
             result = bulk.execute()
     except pymongo.errors.OperationFailure:
         print("MONGO BULK OP ERROR")
