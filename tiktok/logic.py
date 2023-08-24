@@ -5,17 +5,17 @@ from datetime import datetime
 from TikTokApi import TikTokApi
 
 from common.execute import compile_and_run_prompt
-from conversation.prompts.tiktok import TagTikToksPrompt
+from tiktok.prompt import TagTikToksPrompt
+from users import get_users
 from dbs.mongo import (
     mongo_bulk_update,
     mongo_count,
     mongo_delete_many,
     mongo_read,
     mongo_write_many,
+    mongo_dedupe
 )
-from keys import tiktok_cookie
 from messaging import send_message
-from users import get_users
 
 DESIRED_VIDEOS = 700
 
@@ -24,7 +24,7 @@ async def trending_videos():
     print("about to enter async")
     async with TikTokApi() as api:
         print("creating session")
-        await api.create_sessions(ms_tokens=[tiktok_cookie])
+        await api.create_sessions(num_sessions=1)
         print("session created")
         while True:
             num_videos = mongo_count("TikToks")
@@ -60,6 +60,7 @@ async def trending_videos():
             print("ABOUT TO WRITE")
             if len(entries) > 0:
                 mongo_write_many("TikToks", entries)
+
             num_videos = mongo_count("TikToks")
 
             print("NEW NUM VIDEOS")
@@ -74,12 +75,20 @@ async def trending_videos():
 async def delete_videos():
     print("about to delete videos")
 
-    # find num to delete
+    # dedupe collection
+    res = mongo_dedupe("TikToks", {})
+    print("DEDUPED")
+    print(res)
+
+    # find additional num to delete
     num_videos = mongo_count("TikToks")
+    print("MONGO COUNT")
+    print(num_videos)
     num_to_delete = num_videos - (DESIRED_VIDEOS - 100)
 
     # delete videos
-    mongo_delete_many("TikToks", number=num_to_delete)
+    if num_to_delete > 0:
+        mongo_delete_many("TikToks", number=num_to_delete)
 
 
 async def send_videos():
