@@ -129,16 +129,12 @@ def mongo_dedupe(collection, filter):
     try:
         entries = list(mongo_read(collection, filter, find_many=True))
         sorted_entries = sorted(entries, key=lambda x: x["videoId"])
-        #sorted_entries = sorted_entries[:100]
         curr_id = ""
         ids_to_delete = []
         for entry in sorted_entries: 
-            print(entry)
             if curr_id != entry["videoId"]:
-                print("SAVING")
                 curr_id = entry["videoId"]
             else:
-                print("DELETING")
                 ids_to_delete.append(entry["_id"])
 
         if len(ids_to_delete) > 0:
