@@ -113,10 +113,11 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
         entity = mongo_read("Entity", {"entity_id": entity_id})
         if entity is None:
             raise ValueError(f"Entity ID {entity_id} not found in Mongo")
-        user_reflection_dict = entity["reflection_dict"]
+        user_reflection_dict = entity["user_reflection_dict"]
         user_reflection_dict[RELATIONSHIP_KEY] = RelationshipType(
             user_reflection_dict.get(RELATIONSHIP_KEY, RelationshipType.GENERIC.value)
         )
+
         return cls(
             entity_id=entity["entity_id"],
             user_id=entity["user_id"],
@@ -136,10 +137,11 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
     def to_dict(self):
         return {
             "entity_id": self.entity_id,
+            "user_id": self.user_id,
             "names": self.names,
             "info_dict": self.info_dict,
             "created_at": self.created_at,
-            "last_updated": self.last_updated,
+            "last_updated": datetime.now(),
             "user_reflection_dict": self.convert_reflection_dict_for_mongo(),
         }
 
@@ -231,7 +233,7 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
 
     def modify_metadata_dict(self, metadata: dict) -> dict:
         curr_entity_ids = metadata.get(self.metadata_key, [])
-        metadata[self.metadata_key] = curr_entity_ids.extend(self.entity_id)
+        metadata[self.metadata_key] = curr_entity_ids + [self.entity_id]
         return metadata
 
     def log_to_mongo(self) -> None:

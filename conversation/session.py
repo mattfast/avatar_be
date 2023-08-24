@@ -187,6 +187,7 @@ class Session(MetadataMixIn, MongoMixin):
 
         entity_list = self.extract_and_process_entities(message)
         user_message.add_entities(entity_list)
+        print(user_message)
         user_message.log_to_mongo()
 
         emotions_thread.join()
@@ -209,9 +210,9 @@ class Session(MetadataMixIn, MongoMixin):
     def get_relevant_entity_memories(self, message: str, entities: List[Entity]) -> str:
         # Metadata Information for Relevant Memory Retrieval
         memory_metadata = Metadata()
-        memory_metadata.add_value(METADATA_USER_ID_KEY, self.user["user_id"])
+        memory_metadata.kv_add(METADATA_USER_ID_KEY, self.user["user_id"])
         for entity in entities:
-            memory_metadata.add_from_mixin(entity)
+            memory_metadata.add(entity)
         metadata_filter = memory_metadata.format_for_retrieval()
         matches = search_for_str(message, metadata_filter=metadata_filter)
         return format_memories(matches)
@@ -312,7 +313,7 @@ class Session(MetadataMixIn, MongoMixin):
 
         update_thread = threading.Thread(
             target=self.async_update_chat_info,
-            args=[prev_messages, last_message, ai_message.as_langchain_message()],
+            args=[last_message, ai_message],
         )
         update_thread.start()
 
@@ -342,44 +343,47 @@ class Session(MetadataMixIn, MongoMixin):
             },
         )
         should_save = is_important_memory.split(":")[0].strip()
+        print(should_save)
 
         # If not meant to save, then don't
-        if should_save != "YES":
+        if "YES" not in should_save:
             return
 
         # Only update user entities reflections if the memory is an important one
         # TODO: check if the memory is important to this specific entity
         for entity in entities:
+            print(f"TRIGGERING ENTITY {entity.names[0]} UPDATE")
             entity.trigger_update(last_user_message.content)
+            print(f"FINISHED ENTITY {entity.names[0]} UPDATE")
         content_to_save = last_user_message.content
 
         # If so, the save it the metadata
         memory_metadata = Metadata()
         curr_time_secs = datetime.now().timestamp()
-        memory_metadata.add_from_mixin(self)
-        memory_metadata.add_value(METADATA_MEMORY_TYPE_KEY, MemoryType.GENERIC.value)
-        memory_metadata.add_value(METADATA_ACCESSED_KEY, curr_time_secs)
-        memory_metadata.add_value(METADATA_INSERT_TIME_KEY, curr_time_secs)
-        memory_metadata.add_value(METADATA_USER_ID_KEY, self.user["user_id"])
+        memory_metadata.add(self)
+        memory_metadata.kv_add(METADATA_MEMORY_TYPE_KEY, MemoryType.GENERIC.value)
+        memory_metadata.kv_add(METADATA_ACCESSED_KEY, curr_time_secs)
+        memory_metadata.kv_add(METADATA_INSERT_TIME_KEY, curr_time_secs)
+        memory_metadata.kv_add(METADATA_USER_ID_KEY, self.user["user_id"])
 
         # Add Entity and Message Information
-        memory_metadata.add_from_mixin(last_user_message)
+        memory_metadata.add(last_user_message)
+        print("MESSAGE ENTITIES")
+        print(last_user_message.entities)
+        print(memory_metadata)
+
+        # TODO: More integrated process of saving info about a message
 
         # Save Memory
         upsert_piece(content_to_save, memory_metadata)
 
-    def async_update_chat_info(
-        self, prev_messages, last_user_message, ai_message
-    ) -> None:
-        memory_thread = threading.Thread(
-            target=self.process_message_as_memory,
-            args=[prev_messages, last_user_message, ai_message],
-        )
-        memory_thread.start()
+    def async_update_chat_info(self, last_user_message, ai_message) -> None:
         personality = self.session_info.get("personality")
         self_name = self.session_info.get("name")
-        non_ai_messages = prev_messages + [last_user_message]
-        all_messages = prev_messages + [last_user_message, ai_message]
+        non_ai_messages = messages_for_chat_model(self.messages + [last_user_message])
+        all_messages = messages_for_chat_model(
+            self.messages + [last_user_message, ai_message]
+        )
 
         sentiment_res = compile_and_run_prompt(
             AISentimentPrompt,

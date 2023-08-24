@@ -50,14 +50,11 @@ class Metadata(BaseModel):
     metadata_dict: dict = {}
     required_insert: set = DEFAULT_REQUIRED_INSERTION_KEYS
 
-    def add_value(self, key, value):
+    def kv_add(self, key, value):
         self.metadata_dict[key] = value
 
-    def add_from_mixin(self, mixin: MetadataMixIn):
-        mixin_key = mixin.metadata_key
-        self.metadata_dict[mixin_key] = mixin.modify_metadata_dict(
-            deepcopy(self.metadata_dict)
-        )
+    def add(self, mixin: MetadataMixIn):
+        self.metadata_dict = mixin.modify_metadata_dict(deepcopy(self.metadata_dict))
 
     def format_for_insertion(self, validate=True):
         """Format for insertion."""
@@ -77,5 +74,5 @@ class Metadata(BaseModel):
             elif isinstance(val, str) or isinstance(val, numbers.Number):
                 filter[key] = {"$eq": val}
             elif isinstance(val, list):
-                val[key] = {"$in": val}
+                filter[key] = {"$in": val}
         return filter

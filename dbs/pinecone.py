@@ -21,7 +21,7 @@ def upsert_piece(
         validate = False
         metadata = Metadata()
 
-    metadata.add_value(METADATA_CONTENT_KEY, content)
+    metadata.kv_add(METADATA_CONTENT_KEY, content)
     upsert_dict["metadata"] = metadata.format_for_insertion(validate=validate)
     upsert_response = pinecone_index.upsert(vectors=[upsert_dict], namespace=namespace)
     print(upsert_response)
@@ -31,6 +31,6 @@ def search_for_str(piece: str, metadata_filter: Optional[dict] = None, top_k: in
     """Search for string."""
     vec = embeddings.embed_query(piece)
     matches = pinecone_index.query(
-        vector=vec, filter=metadata_filter, top_k=1, include_metadata=True
+        vector=vec, filter=metadata_filter, top_k=top_k, include_metadata=True
     )
     return matches["matches"]

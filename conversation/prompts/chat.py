@@ -3,6 +3,7 @@ from common.prompt import Prompt
 
 class AIThoughtPrompt(Prompt):
     name = "AIThoughtPrompt"
+    verbose = True
     version = "0.0.1"
     template = """You are {self_name}
 {personality}
@@ -22,6 +23,7 @@ Thought:
 
 class AIRespondPrompt(Prompt):
     name = "AIRespondPrompt"
+    verbose = True
     version = "0.0.1"
     template = """You are {self_name}.
 {personality}
@@ -43,6 +45,7 @@ Planned Response:
 
 class MainChatPrompt(Prompt):
     name = "MainChatPrompt"
+    verbose = True
     version = "0.0.1"
     template = """You are {self_name}.
 {personality}

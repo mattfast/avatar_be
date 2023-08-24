@@ -42,8 +42,11 @@ def format_memories(memories: List[dict]) -> str:
     if len(memories) == 0:
         return "None"
 
+    print("FETCHED MEMORIES")
+    print(memories)
+
     format_str = ""
     for i, match in enumerate(memories):
         match_metadata = match.get("metadata", {})
-        format_str += f"Memory {i}: {match_metadata.get('content', 'None')}\n"
+        format_str += f"Memory {i+1}: {match_metadata.get('content', 'None')}\n"
     return format_str

@@ -21,7 +21,6 @@ def health_check():
 
 @app.route("/bot", methods=["POST"])
 def message():
-
     if carrier == "TWILIO":
         msg = request.values.get("Body", "").lower()
         number = request.values.get("From", "")
