@@ -17,13 +17,11 @@ async def trending_videos():
     print("about to enter async")
     async with TikTokApi() as api:
         print("creating session")
-        #await api.create_sessions(ms_tokens=[tiktok_ms_token])
         await api.create_sessions(num_sessions=1)
         print("session created")
         while True:
             num_videos = mongo_count("TikToks")
-            #num_to_fetch = DESIRED_VIDEOS - num_videos
-            num_to_fetch = 100
+            num_to_fetch = DESIRED_VIDEOS - num_videos
 
             print("NUM VIDEOS AND TO FETCH")
             print(num_videos)
