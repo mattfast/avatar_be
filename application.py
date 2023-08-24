@@ -8,7 +8,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from auth import login
 from keys import carrier, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
-from tiktok import delete_videos, send_videos, trending_videos
+from tiktok import delete_videos, send_videos, tag_videos, trending_videos
 
 app = Flask(__name__)
 CORS(app)
@@ -103,6 +103,22 @@ def send_tiktoks():
         return "lambda token invalid", 401
 
     t = threading.Thread(target=asyncio.run, args=(send_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
+
+
+@app.route("/tag-tiktoks", methods=["POST"])
+def tag_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(tag_videos(),))
     t.start()
 
     return "tiktok job initiated", 202

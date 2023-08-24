@@ -1,9 +1,18 @@
+import functools
 import random
 from datetime import datetime
 
 from TikTokApi import TikTokApi
 
-from dbs.mongo import mongo_count, mongo_delete_many, mongo_read, mongo_write_many
+from common.execute import compile_and_run_prompt
+from conversation.prompts.tiktok import TagTikToksPrompt
+from dbs.mongo import (
+    mongo_bulk_update,
+    mongo_count,
+    mongo_delete_many,
+    mongo_read,
+    mongo_write_many,
+)
 from keys import tiktok_cookie
 from messaging import send_message
 from users import get_users
@@ -95,3 +104,39 @@ async def send_videos():
 
         send_message("yo, thought you'd like this:", user["number"])
         send_message(url, user["number"])
+
+
+async def tag_videos():
+
+    print("tagging vids")
+    tiktoks = list(mongo_read("TikToks", {"tags": {"$exists": False}}, find_many=True))
+    print("TIKTOKS TO TAG:")
+    print(len(tiktoks))
+    query_list = []
+    update_list = []
+    for i in range(0, len(tiktoks), 15):
+        upper_bound = min(i + 15, len(tiktoks))
+        batch = tiktoks[i:upper_bound]
+        video_desc_str = functools.reduce(
+            lambda a, b: a + f"Video {b['videoId']}: {b['description']}\n", batch, ""
+        )
+        # print(video_desc_str)
+        res = compile_and_run_prompt(
+            TagTikToksPrompt, {"video_descriptions": video_desc_str}
+        )
+        res_list = res.split("\n")
+        res_list = [i for i in res_list if i]  # remove empty strings
+        for v in res_list:
+            try:
+                terms = v.split(":")
+                videoId = terms[0].split(" ")[1]
+                tag = terms[1][1:]
+                query_list.append({"videoId": videoId})
+                update_list.append({"$set": {"tags": [tag]}})
+            except:
+                print("ERROR: output not formatted correctly")
+
+    print(query_list)
+    print(update_list)
+
+    mongo_bulk_update("TikToks", query_list, update_list)
