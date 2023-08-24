@@ -1,6 +1,14 @@
+from abc import abstractmethod
+
 import pymongo
 
 from dbs import mongo_db
+
+
+class MongoMixin:
+    @abstractmethod
+    def log_to_mongo(self):
+        return None
 
 
 def mongo_write(collection, entry):

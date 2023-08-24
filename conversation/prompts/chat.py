@@ -68,8 +68,8 @@ DO NOT USE MULTIPLE SENTENCES
 ## Information About Recent People Mentioned:
 {recent_people_info}
 
-## Potentially Relevant Information:
-{vector_info}
+## Relevant Memories:
+{relevant_memories}
 
 # Description of your friend
 

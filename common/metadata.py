@@ -12,6 +12,7 @@ METADATA_ACCESSED_KEY = "last_accessed"
 METADATA_SESSION_ID_KEY = "session_id"
 METADATA_KEYWORDS_KEY = "keywords"
 METADATA_CONTENT_KEY = "content"
+METADATA_MESSAGE_ID_KEY = "message_id"
 
 
 DEFAULT_REQUIRED_INSERTION_KEYS = {
@@ -22,6 +23,7 @@ DEFAULT_REQUIRED_INSERTION_KEYS = {
     METADATA_SESSION_ID_KEY,
     METADATA_ACCESSED_KEY,
     METADATA_CONTENT_KEY,
+    METADATA_MESSAGE_ID_KEY,
 }
 
 ## Insertion Metadata for Pinecone ##
@@ -76,3 +78,4 @@ class Metadata(BaseModel):
                 filter[key] = {"$eq": val}
             elif isinstance(val, list):
                 val[key] = {"$in": val}
+        return filter

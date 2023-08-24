@@ -1,15 +1,18 @@
+from copy import deepcopy
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
 
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from dbs.mongo import mongo_read, mongo_write
+from common.metadata import METADATA_MESSAGE_ID_KEY, MetadataMixIn
+from dbs.mongo import MongoMixin, mongo_upsert
+from entity.base import Entity
 
 ROLE_TO_CLASS_DICT = {"ai": AIMessage, "human": HumanMessage, "system": SystemMessage}
 
 
-class Message:
+class Message(MetadataMixIn, MongoMixin):
     def __init__(
         self,
         content: str,
@@ -17,7 +20,7 @@ class Message:
         session_id: str,
         speaker: Optional[str] = None,
         message_id: Optional[str] = None,
-        entity_ids: Optional[List] = None,
+        entities: Optional[List[Entity]] = None,
     ):
         self.content = content
         self.role = role
@@ -25,7 +28,7 @@ class Message:
         self.speaker = speaker or role
         self.created_time = datetime.now()
         self.message_id = message_id or str(uuid4())
-        self.entity_ids = entity_ids or []
+        self.entities = entities or []
 
     def to_dict(self) -> dict:
         return {
@@ -35,21 +38,37 @@ class Message:
             "created_time": self.created_time,
             "role": self.role,
             "speaker": self.speaker,
-            "entity_ids": self.entity_ids,
+            "entity_ids": [entity.entity_id for entity in self.entities],
         }
 
-    def add_entity_ids(self, entity_ids: List[str]) -> None:
-        self.entity_ids.extend(entity_ids)
+    @property
+    def metadata_key(self) -> str:
+        return METADATA_MESSAGE_ID_KEY
+
+    def modify_metadata_dict(self, metadata: dict) -> dict:
+        metadata[self.metadata_key] = self.message_id
+        # For all entities in the dictionary, modify the dictionary
+        for entity in self.entities:
+            metadata = entity.modify_metadata_dict(metadata)
+        return metadata
+
+    def add_entities(self, entities: List[Entity]) -> None:
+        self.entities.extend(entities)
 
     def log_to_mongo(self) -> None:
         message_dict = self.to_dict()
-        mongo_write("Messages", message_dict)
+        mongo_upsert("Messages", {"message_id": self.message_id}, message_dict)
 
     def format(self) -> str:
         return f"{self.speaker}: {self.content}"
 
     def as_langchain_message(self) -> BaseMessage:
         return ROLE_TO_CLASS_DICT[self.role](content=self.content)
+
+
+# TODO: try to refactor this into the common class
+def messages_for_chat_model(message_list: List[Message]) -> List[BaseMessage]:
+    return deepcopy([message.as_langchain_message() for message in message_list])
 
 
 def message_list_to_convo_prompt(conv_list: List[Message]) -> str:

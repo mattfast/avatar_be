@@ -1,13 +1,6 @@
 import re
 from copy import deepcopy
-
-
-def list_to_convo_prompt(conv_list) -> str:
-    """Convert Conversation List to Prompt."""
-    orig_str = "Conversation:\n"
-    for i, element in enumerate(conv_list):
-        orig_str += f"{element.fo}"
-    return orig_str
+from typing import List
 
 
 def clean_sentence(sentence):
@@ -43,3 +36,14 @@ common_replacements = {
     "abt": "about",
     "idk": "i don't know",
 }
+
+
+def format_memories(memories: List[dict]) -> str:
+    if len(memories) == 0:
+        return "None"
+
+    format_str = ""
+    for i, match in enumerate(memories):
+        match_metadata = match.get("metadata", {})
+        format_str += f"Memory {i}: {match_metadata.get('content', 'None')}\n"
+    return format_str

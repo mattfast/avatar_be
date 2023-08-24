@@ -20,7 +20,7 @@ class FriendNeedPrompt(Prompt):
 Your friends current feelings on the topic:
 {sentiment}
 
-Think through what you can offer your friend distinctly with your personality. Output as a short need your friend wants.
+Think through what you can offer your friend distinctly with your personality. Output as a short need your friend wants. "Currently, my friend is feeling... so they need...".
 """
 
 

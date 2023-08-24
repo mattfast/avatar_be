@@ -7,8 +7,15 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
+from common.execute import compile_and_run_prompt
 from common.metadata import METADATA_ENTITY_KEY, MetadataMixIn
-from dbs.mongo import mongo_read, mongo_upsert
+from dbs.mongo import MongoMixin, mongo_read, mongo_upsert
+from entity.prompts.entity_update import (
+    EmotionalSentimentTowardEntityPrompt,
+    OverallOpinionTowardsEntityPrompt,
+    PersonalityExtractionPrompt,
+    RelationshipExtractionPrompt,
+)
 
 
 class RelationshipType(Enum):
@@ -43,6 +50,7 @@ Core sentiment towards {name}: {core_sentiment}
 RELATIONSHIP_KEY = "relationship"
 PERSONALITY_KEY = "personality"
 SENTIMENT_KEY = "sentiment"
+OVERALL_OPINION_KEY = "opinion"
 
 UPDATE_COUNT_THRESHOLD = 5
 
@@ -52,7 +60,7 @@ default_user_reflection_dict = {
 }
 
 
-class Entity(BaseModel, MetadataMixIn):
+class Entity(BaseModel, MetadataMixIn, MongoMixin):
     """Class for Entity. To Mirror Mongo."""
 
     entity_id: str
@@ -83,7 +91,7 @@ class Entity(BaseModel, MetadataMixIn):
     @classmethod
     def create_new(
         cls,
-        name,
+        name: str,
         user_id: str,
         relationship: RelationshipType = RelationshipType.GENERIC,
     ):
@@ -136,41 +144,85 @@ class Entity(BaseModel, MetadataMixIn):
         }
 
     def should_update(self) -> bool:
-        return self.mentions > UPDATE_COUNT_THRESHOLD
+        return self.mentions % UPDATE_COUNT_THRESHOLD == 1
 
-    def update(self):
+    def update(self, message: str):
         # Reset Mentions
-        self.mentions = 0
+        name = self.names[0]
 
-        # TODO: implement the update
+        # TODO: implement and test the opinion update
+        relationship_type = compile_and_run_prompt(
+            RelationshipExtractionPrompt,
+            {
+                "entity_name": name,
+                "former_type": self.relationship,
+                "memories": message,
+                "relationship_types": relationship_list,
+            },
+        )
+        if relationship_type in relationship_list:
+            self.set_relationship(RelationshipType(relationship_type))
+
+        personality_res = compile_and_run_prompt(
+            PersonalityExtractionPrompt,
+            {
+                "entity_name": name,
+                "memories": message,
+                "former_understanding": self.personality,
+            },
+        )
+        if personality_res != "NO NEW INFO":
+            self.set_personality(personality_res)
+
+        sentiment_res = compile_and_run_prompt(
+            EmotionalSentimentTowardEntityPrompt,
+            {
+                "entity_name": name,
+                "memories": message,
+                "personality": self.personality,
+                "former_sentiment": self.sentiment,
+            },
+        )
+        if sentiment_res != "NO CHANGE":
+            self.set_sentiment(sentiment_res)
 
         # Log changes to entity in mongo
         self.log_to_mongo()
-        return None
 
-    def increment_mentions(self, is_first_time: bool = False):
-        self.mentions += 1
-        if self.should_update() or is_first_time:
-            update_thread = threading.Thread(target=self.update)
+    def trigger_update(self, message: str):
+        if self.should_update():
+            update_thread = threading.Thread(target=self.update, args=[message])
             update_thread.start()
 
     @property
     def relationship(self):
-        return self.info_dict.get(RELATIONSHIP_KEY, RelationshipType.GENERIC)
+        return self.user_reflection_dict.get(RELATIONSHIP_KEY, RelationshipType.GENERIC)
+
+    def set_relationship(self, relationship_val: RelationshipType):
+        self.user_reflection_dict[RELATIONSHIP_KEY] = relationship_val
 
     @property
     def personality(self):
         return self.info_dict.get(PERSONALITY_KEY)
 
+    def set_personality(self, personality: str):
+        self.info_dict[PERSONALITY_KEY] = personality
+
+    @property
+    def sentiment(self):
+        return self.user_reflection_dict.get(SENTIMENT_KEY, "neutral")
+
+    def set_sentiment(self, sentiment: str):
+        self.user_reflection_dict[SENTIMENT_KEY] = sentiment
+
     def format(self) -> str:
         main_name = self.names[0]
-        sentiment = self.user_reflection_dict.get(SENTIMENT_KEY, "neutral")
 
         return entity_format_str.format(
             name=main_name,
             relationship=self.relationship.value,
             personality=self.personality,
-            core_sentiment=sentiment,
+            core_sentiment=self.sentiment,
         )
 
     @property
@@ -185,24 +237,25 @@ class Entity(BaseModel, MetadataMixIn):
     def log_to_mongo(self) -> None:
         entity_dict = self.to_dict()
         mongo_upsert("Entity", {"entity_id": self.entity_id}, entity_dict)
-        return
 
 
 class EntityName(BaseModel):
     """Class for Entity Name. To Mirror Mongo."""
 
     name: str
+    user_id: str
     created_at: datetime = datetime.now()
     last_updated: datetime = datetime.now()
     entity_id: Optional[str] = None
 
     @classmethod
-    def from_vals(cls, name, entity_id: Optional[str] = None):
-        return cls(name=name, entity_id=entity_id)
+    def from_vals(cls, name, user_id, entity_id: Optional[str] = None):
+        return cls(name=name, user_id=user_id, entity_id=entity_id)
 
     def to_dict(self):
         return {
             "name": self.name,
+            "user_id": self.user_id,
             "entity_id": self.entity_id,
             "created_at": self.created_at,
             "last_updated": self.last_updated,
@@ -215,22 +268,24 @@ class EntityName(BaseModel):
             {"entity_id": self.entity_id, "name": self.name},
             entity_name_dict,
         )
-        return
 
 
-def find_entity_name(name: str) -> Optional[EntityName]:
-    name_options = mongo_read("EntityName", {"name": name}, find_many=True)
+def find_entity_name(name: str, user_id: str) -> Optional[EntityName]:
+    name_options = mongo_read(
+        "EntityName", {"name": name, "user_id": user_id}, find_many=True
+    )
 
     option_to_use = None
     num_options = 0
-    # Just take the last option at first, do some smarter filtering in the future
+    # Just take the first option, do some smarter filtering in the future
     # or in general, try to avoid collisions
     for option in name_options:
         option_to_use = option
         num_options += 1
+        break
 
     print(f"There are {num_options} entities with the name {name}")
     if num_options == 0:
         return None
 
-    return EntityName.from_vals(name, option_to_use["entity_id"])
+    return EntityName.from_vals(name, user_id, option_to_use["entity_id"])
