@@ -5,11 +5,11 @@ import random
 import functools
 
 from common.execute import compile_and_run_prompt
-from conversation.prompts.tiktok import TagTikToksPrompt
+from tiktok.prompt import TagTikToksPrompt
 from users import get_users
 from keys import tiktok_ms_token
 from messaging import send_message
-from dbs.mongo import mongo_count, mongo_read, mongo_delete_many, mongo_bulk_update
+from dbs.mongo import mongo_count, mongo_read, mongo_delete_many, mongo_bulk_update, mongo_dedupe, mongo_write_many
 
 DESIRED_VIDEOS = 700
 
@@ -51,9 +51,10 @@ async def trending_videos():
             
             # find num videos in db
             print("ABOUT TO WRITE")
-            #if len(entries) > 0:
-            #    mongo_write_many("TikToks", entries)
-            #num_videos = mongo_count("TikToks")
+            if len(entries) > 0:
+                mongo_write_many("TikToks", entries)
+
+            num_videos = mongo_count("TikToks")
 
             print("NEW NUM VIDEOS")
             print(num_videos)
@@ -64,12 +65,20 @@ async def trending_videos():
 async def delete_videos():
     print("about to delete videos")
 
-    # find num to delete
+    # dedupe collection
+    res = mongo_dedupe("TikToks", {})
+    print("DEDUPED")
+    print(res)
+
+    # find additional num to delete
     num_videos = mongo_count("TikToks")
+    print("MONGO COUNT")
+    print(num_videos)
     num_to_delete = num_videos - (DESIRED_VIDEOS - 100)
 
     # delete videos
-    mongo_delete_many("TikToks", number=num_to_delete)
+    if num_to_delete > 0:
+        mongo_delete_many("TikToks", number=num_to_delete)
 
 
 async def send_videos():

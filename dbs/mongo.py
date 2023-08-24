@@ -125,9 +125,24 @@ def mongo_bulk_update(collection, query_list, update_list):
     print(result)
     return result
 
-def mongo_dedupe(collection):
+def mongo_dedupe(collection, filter):
     try:
-        
+        entries = list(mongo_read(collection, filter, find_many=True))
+        sorted_entries = sorted(entries, key=lambda x: x["videoId"])
+        #sorted_entries = sorted_entries[:100]
+        curr_id = ""
+        ids_to_delete = []
+        for entry in sorted_entries: 
+            print(entry)
+            if curr_id != entry["videoId"]:
+                print("SAVING")
+                curr_id = entry["videoId"]
+            else:
+                print("DELETING")
+                ids_to_delete.append(entry["_id"])
+
+        result = mongo_db[collection].delete_many({ "_id": { "$in": ids_to_delete } })
+
     except pymongo.errors.OperationFailure:
         print("MONGO DEDUPE ERROR")
         print(f"Collection: {collection}")
