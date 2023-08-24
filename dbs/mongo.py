@@ -124,3 +124,14 @@ def mongo_bulk_update(collection, query_list, update_list):
 
     print(result)
     return result
+
+def mongo_dedupe(collection):
+    try:
+        
+    except pymongo.errors.OperationFailure:
+        print("MONGO DEDUPE ERROR")
+        print(f"Collection: {collection}")
+        result = None
+
+    print(result)
+    return result
