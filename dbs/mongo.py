@@ -28,9 +28,12 @@ def mongo_write_many(collection, entries):
     return result
 
 
-def mongo_upsert(collection, query, update):
+def mongo_upsert(collection, query, update, update_many: bool = False):
     try:
-        result = mongo_db[collection].update_one(query, {"$set": update}, upsert=True)
+        if not update_many:
+            result = mongo_db[collection].update_one(query, {"$set": update}, upsert=True)
+        else:
+            result = mongo_db[collection].update_many(query, {"$set": update}, upsert=True)
     except pymongo.errors.OperationFailure:
         print("MONGO UPDATE ERROR")
         print(f"Collection: {collection}")
@@ -90,6 +93,33 @@ def mongo_delete_many(collection, number = 100):
         print("MONGO DELETE ERROR")
         print(f"Collection: {collection}")
         print(f"Number: {number}")
+        result = None
+
+    print(result)
+    return result
+
+
+def mongo_bulk_update(collection, query_list, update_list):
+    try:
+        bulk = mongo_db[collection].initialize_unordered_bulk_op()
+        counter = 0
+
+        for i in range(len(query_list)):
+            # process in bulk
+            bulk.find(query_list[i]).update(update_list[i])
+            counter += 1
+
+            if (counter % 500 == 0):
+                result = bulk.execute()
+                bulk = mongo_db[collection].initialize_ordered_bulk_op()
+
+        if (counter != 0):
+            result = bulk.execute()
+    except pymongo.errors.OperationFailure:
+        print("MONGO BULK OP ERROR")
+        print(f"Collection: {collection}")
+        print(f"Query List: {query_list}")
+        print(f"Update List: {update_list}")
         result = None
 
     print(result)
