@@ -7,7 +7,7 @@ import functools
 from common.execute import compile_and_run_prompt
 from conversation.prompts.tiktok import TagTikToksPrompt
 from users import get_users
-from keys import tiktok_cookie
+from keys import tiktok_ms_token
 from messaging import send_message
 from dbs.mongo import mongo_count, mongo_read, mongo_write_many, mongo_delete_many, mongo_bulk_update
 
@@ -17,11 +17,12 @@ async def trending_videos():
     print("about to enter async")
     async with TikTokApi() as api:
         print("creating session")
-        await api.create_sessions(ms_tokens=[tiktok_cookie])
+        await api.create_sessions(ms_tokens=[tiktok_ms_token])
         print("session created")
         while True:
             num_videos = mongo_count("TikToks")
-            num_to_fetch = DESIRED_VIDEOS - num_videos
+            #num_to_fetch = DESIRED_VIDEOS - num_videos
+            num_to_fetch = 30
 
             print("NUM VIDEOS AND TO FETCH")
             print(num_videos)
@@ -51,9 +52,9 @@ async def trending_videos():
             
             # find num videos in db
             print("ABOUT TO WRITE")
-            if len(entries) > 0:
-                mongo_write_many("TikToks", entries)
-            num_videos = mongo_count("TikToks")
+            #if len(entries) > 0:
+            #    mongo_write_many("TikToks", entries)
+            #num_videos = mongo_count("TikToks")
 
             print("NEW NUM VIDEOS")
             print(num_videos)
