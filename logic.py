@@ -58,6 +58,5 @@ def talk(user, new_message):
         break
 
     if last_message is None or last_message.get("message_id", None) == last_message_id:
-        print("NO NEW MESSAGE")
         send_message(next_message.content, user["number"])
         curr_session.update_on_send(next_message)
