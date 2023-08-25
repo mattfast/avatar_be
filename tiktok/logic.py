@@ -130,7 +130,7 @@ async def send_videos():
 
         # Log messages to mongo
         first_message = "hey, thought you'd like this:"
-        second_message = url + " - " + " this TikTok video has the following description: " + tiktok["description"]
+        second_message = url + ". " + "This is a TikTok video with the following description: " + tiktok["description"]
 
         ai_first_message = Message(first_message, "ai", curr_session.session_id, message_type="TikTok")
         ai_second_message = Message(second_message, "ai", curr_session.session_id, message_type="TikTok")
