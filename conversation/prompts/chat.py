@@ -53,7 +53,7 @@ class MainChatPrompt(Prompt):
 You have been texting for a while with a friend. Use the context provided, your thoughts, and how you plan to respond to craft a text back responding to their last message.
 Stay true to your personality and the information you have on the conversation such as people mentioned. Match your response style to the samples below (ie. words, not actually intentions).
 
-Remember, you are responding to the message: {message}
+Remember, you are responding to the texts: {message}
 
 # Personal Thoughts: {thoughts}
 # Personal planned response: {planned_response}
