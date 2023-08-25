@@ -97,22 +97,38 @@ async def send_videos():
     tiktoks = list(mongo_read("TikToks", {}, find_many=True))
     print(users)
 
+    query_list = []
+    update_list = []
     for user in users:
-        print("here")
         if user["number"] != "+12812240743" and user["number"] != "+14803523815":
             continue
 
-        print("here2")
-
         tiktok = random.choice(tiktoks)
+        while "tiktoks" in user and tiktok["videoId"] in user["tiktoks"]:
+            tiktok = random.choice(tiktoks)
+
         author = tiktok["author"]
         videoId = tiktok["videoId"]
         url = f"https://www.tiktok.com/@{author}/video/{videoId}"
 
-        print(url)
+        new_tiktoks_arr = []
+        if "tiktoks" in user:
+            print("tiktoks field exists")
+            new_tiktoks_arr = user["tiktoks"].append(tiktok["videoId"])
+        else:
+            print("tiktoks field doesn't exist")
+            new_tiktoks_arr = [ tiktok["videoId"] ]
 
+        query_list.append({ "number": user["number"] })
+        update_list.append({ "$set": { "tiktoks": new_tiktoks_arr }})
         send_message("yo, thought you'd like this:", user["number"])
         send_message(url, user["number"])
+    
+    print(query_list)
+    print(update_list)
+    
+    mongo_bulk_update("Users", query_list, update_list)
+
 
 
 async def tag_videos():
