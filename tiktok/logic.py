@@ -5,17 +5,19 @@ from datetime import datetime
 from TikTokApi import TikTokApi
 
 from common.execute import compile_and_run_prompt
-from conversation.prompts.tiktok import TagTikToksPrompt
+from conversation.message import Message
+from conversation.session import Session
+from tiktok.prompt import TagTikToksPrompt
+from users import get_users
 from dbs.mongo import (
     mongo_bulk_update,
     mongo_count,
     mongo_delete_many,
     mongo_read,
     mongo_write_many,
+    mongo_dedupe
 )
-from keys import tiktok_cookie
 from messaging import send_message
-from users import get_users
 
 DESIRED_VIDEOS = 700
 
@@ -24,7 +26,7 @@ async def trending_videos():
     print("about to enter async")
     async with TikTokApi() as api:
         print("creating session")
-        await api.create_sessions(ms_tokens=[tiktok_cookie])
+        await api.create_sessions(num_sessions=1)
         print("session created")
         while True:
             num_videos = mongo_count("TikToks")
@@ -60,6 +62,7 @@ async def trending_videos():
             print("ABOUT TO WRITE")
             if len(entries) > 0:
                 mongo_write_many("TikToks", entries)
+
             num_videos = mongo_count("TikToks")
 
             print("NEW NUM VIDEOS")
@@ -74,12 +77,20 @@ async def trending_videos():
 async def delete_videos():
     print("about to delete videos")
 
-    # find num to delete
+    # dedupe collection
+    res = mongo_dedupe("TikToks", {})
+    print("DEDUPED")
+    print(res)
+
+    # find additional num to delete
     num_videos = mongo_count("TikToks")
+    print("MONGO COUNT")
+    print(num_videos)
     num_to_delete = num_videos - (DESIRED_VIDEOS - 100)
 
     # delete videos
-    mongo_delete_many("TikToks", number=num_to_delete)
+    if num_to_delete > 0:
+        mongo_delete_many("TikToks", number=num_to_delete)
 
 
 async def send_videos():
@@ -88,22 +99,56 @@ async def send_videos():
     tiktoks = list(mongo_read("TikToks", {}, find_many=True))
     print(users)
 
+    query_list = []
+    update_list = []
     for user in users:
-        print("here")
-        if user["number"] != "+12812240743" and user["number"] != "+14803523815":
-            continue
-
-        print("here2")
-
         tiktok = random.choice(tiktoks)
+        while "tiktoks" in user and tiktok["videoId"] in user["tiktoks"]:
+            tiktok = random.choice(tiktoks)
+
         author = tiktok["author"]
         videoId = tiktok["videoId"]
         url = f"https://www.tiktok.com/@{author}/video/{videoId}"
 
-        print(url)
+        new_tiktoks_arr = []
+        if "tiktoks" in user:
+            print("tiktoks field exists")
+            new_tiktoks_arr = user["tiktoks"].append(tiktok["videoId"])
+        else:
+            print("tiktoks field doesn't exist")
+            new_tiktoks_arr = [ tiktok["videoId"] ]
 
-        send_message("yo, thought you'd like this:", user["number"])
+        query_list.append({ "number": user["number"] })
+        update_list.append({ "$set": { "tiktoks": new_tiktoks_arr }})
+
+        # Get user session
+        session_id = user.get("session_id", None)
+        if session_id is None:
+            curr_session = Session(user)
+        else:
+            curr_session = Session.from_user(user)
+
+        # Log messages to mongo
+        first_message = "hey, thought you'd like this:"
+        second_message = url + ". " + "This is a TikTok video with the following description: " + tiktok["description"]
+
+        ai_first_message = Message(first_message, "ai", curr_session.session_id)
+        ai_second_message = Message(second_message, "ai", curr_session.session_id, message_type="TikTok")
+
+        curr_session.last_message_sent = ai_second_message.created_time
+        curr_session.log_to_mongo()
+        ai_first_message.log_to_mongo()
+        ai_second_message.log_to_mongo()
+
+        # send messages
+        send_message(first_message, user["number"])
         send_message(url, user["number"])
+    
+    print(query_list)
+    print(update_list)
+    
+    mongo_bulk_update("Users", query_list, update_list)
+
 
 
 async def tag_videos():
