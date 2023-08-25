@@ -100,9 +100,6 @@ async def send_videos():
     query_list = []
     update_list = []
     for user in users:
-        if user["number"] != "+12812240743" and user["number"] != "+14803523815":
-            continue
-
         tiktok = random.choice(tiktoks)
         while "tiktoks" in user and tiktok["videoId"] in user["tiktoks"]:
             tiktok = random.choice(tiktoks)
@@ -121,7 +118,7 @@ async def send_videos():
 
         query_list.append({ "number": user["number"] })
         update_list.append({ "$set": { "tiktoks": new_tiktoks_arr }})
-        send_message("yo, thought you'd like this:", user["number"])
+        send_message("hey, thought you'd like this:", user["number"])
         send_message(url, user["number"])
     
     print(query_list)
