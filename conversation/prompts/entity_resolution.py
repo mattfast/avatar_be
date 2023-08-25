@@ -38,29 +38,32 @@ class ProperNounExtraction(Prompt):
     name = "ProperNounExtraction"
     version = "0.0.1"
     model = "chat"
-    template = """Output all proper noun names or titles, if any, in the following sentence as a comma separated list. Include whole modifiers in your response.
+    template = """Output all proper noun names or titles, if any, in the following texts as a comma separated list. Include whole modifiers in your response.
 If there are no proper noun names or titles, output NONE. Do not include any non-named words or descriptors in your output. YOUR OUTPUT MUST ONLY BE NAMES, NOT DESCRIPTORS.
 
 ##### Start Examples #####
 Example 1:
-Sentence: She's fine
+Last Texts: She's fine
 Names or Titles: NONE
 
 Example 2:
-Sentence: Nancy told me about James.
+Last Texts: Nancy told me about James.
 Names or Titles: [Nancy, James]
 
 Example 3:
-Sentence: I told my friend, Isabelle, about your mom.
+Last Texts: I told my friend Isabelle 
+about your mom.
+what do you think?
 Names or Titles: [Isabelle]
 
 Example 4:
-Sentence: I told you, I'm ok.
+Last Texts: I told you
+I'm ok.
 Names or Titles: NONE
 
 ##### End Examples #####
 
-Sentence: {sentence}
+Last Texts: {texts}
 Names or Titles:"""
 
 

@@ -4,13 +4,13 @@ from common.prompt import Prompt
 class EmotionExtractionPrompt(Prompt):
     name = "EmotionExtractionPrompt"
     version = "0.0.1"
-    template = """Using the conversation as context, output the two main emotions expressed by the speaker in the last sentence of the conversation in a comma separated list:
+    template = """Using the conversation as context, output the two main emotions expressed by the speaker in the last text of the conversation in a comma separated list:
 
 ## Start Context ##
 {conversation}
 ## End Context ##
 
-Last Sentence: {sentence}
+Last Text: {texts}
 Emotions Present:"""
 
 
