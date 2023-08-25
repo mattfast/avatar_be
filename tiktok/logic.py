@@ -5,6 +5,8 @@ from datetime import datetime
 from TikTokApi import TikTokApi
 
 from common.execute import compile_and_run_prompt
+from conversation.message import Message
+from conversation.session import Session
 from tiktok.prompt import TagTikToksPrompt
 from users import get_users
 from dbs.mongo import (
@@ -118,7 +120,27 @@ async def send_videos():
 
         query_list.append({ "number": user["number"] })
         update_list.append({ "$set": { "tiktoks": new_tiktoks_arr }})
-        send_message("hey, thought you'd like this:", user["number"])
+
+        # Get user session
+        session_id = user.get("session_id", None)
+        if session_id is None:
+            curr_session = Session(user)
+        else:
+            curr_session = Session.from_user(user)
+
+        # Log messages to mongo
+        first_message = "hey, thought you'd like this:"
+        second_message = tiktok["description"]
+
+        ai_first_message = Message(first_message, "ai", curr_session.session_id)
+        ai_second_message = Message(second_message, "ai", curr_session.session_id)
+
+        curr_session.last_message_sent = ai_second_message.created_time
+        ai_first_message.log_to_mongo()
+        ai_second_message.log_to_mongo()
+
+        # send messages
+        send_message(first_message, user["number"])
         send_message(url, user["number"])
     
     print(query_list)
