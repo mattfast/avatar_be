@@ -136,6 +136,7 @@ async def send_videos():
         ai_second_message = Message(second_message, "ai", curr_session.session_id, message_type="TikTok")
 
         curr_session.last_message_sent = ai_second_message.created_time
+        curr_session.log_to_mongo()
         ai_first_message.log_to_mongo()
         ai_second_message.log_to_mongo()
 
