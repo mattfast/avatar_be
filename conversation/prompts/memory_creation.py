@@ -13,7 +13,7 @@ Prior Information:
 
 {conversation}
 
-Recent Message: {message}
+Recent Texts: {message}
 
 Decision:
 """

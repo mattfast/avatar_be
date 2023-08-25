@@ -1,6 +1,6 @@
 from copy import deepcopy
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -81,3 +81,19 @@ def message_list_to_convo_prompt(conv_list: List[Message]) -> str:
     for i, element in enumerate(conv_list):
         orig_str += f"{element.format()}\n"
     return orig_str
+
+
+def partition_prev_messages(
+    messages: Optional[List[Message]] = None,
+) -> Tuple[List[Message], List[Message]]:
+    """Partition Previous Messages into those to include with current user message and not."""
+    if messages is None:
+        return [], []
+    partition_point = len(messages)
+    for i, message in enumerate(messages[::-1]):
+        if message.role == "ai":
+            partition_point = len(messages) - i
+            break
+    messages_to_respond_to = messages[partition_point:]
+    prev_messages = messages[:partition_point]
+    return prev_messages, messages_to_respond_to

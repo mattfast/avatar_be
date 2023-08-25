@@ -1,7 +1,7 @@
 import threading
 from copy import deepcopy
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from ai.personality import default_ai_session_info, default_writing_style
@@ -20,6 +20,7 @@ from conversation.message import (
     Message,
     message_list_to_convo_prompt,
     messages_for_chat_model,
+    partition_prev_messages,
 )
 from conversation.prompts.chat import AIRespondPrompt, AIThoughtPrompt, MainChatPrompt
 from conversation.prompts.chat_update import (
@@ -61,7 +62,7 @@ class Session(MetadataMixIn, MongoMixin):
     ):
         self.user = user
         self.session_id = session_id or str(uuid4())
-        self.messages = messages or []
+        self.prev_messages, self.user_messages = partition_prev_messages(messages)
         self.session_info = session_info or default_ai_session_info
         self.session_user_info = session_user_info or default_user_session_info
         self.last_message_sent = last_message_sent or datetime.now()
@@ -136,13 +137,13 @@ class Session(MetadataMixIn, MongoMixin):
         session_dict = self.to_dict()
         mongo_upsert("Session", {"session_id": self.session_id}, session_dict)
 
-    def extract_and_process_entities(self, message) -> List[Entity]:
+    def extract_and_process_entities(self, message: str) -> List[Entity]:
         """Extract and process entities."""
         print(message)
+        texts = self.format_recent_user_messages() + f"{message}\n"
         raw_entity_output = compile_and_run_prompt(
             ProperNounExtraction,
-            {"sentence": message},
-            messages=messages_for_chat_model(self.messages),
+            {"texts": texts},
         )
 
         print("RAW ENTITY OUTPUT")
@@ -173,15 +174,14 @@ class Session(MetadataMixIn, MongoMixin):
 
         return entity_list
 
-    def process_next_message(self, message: str) -> str:
+    def process_next_message(self, message: str) -> Message:
         message = clean_sentence(message)
-        initial_conv = message_list_to_convo_prompt(self.messages)
         user_message = Message(message, "human", self.session_id)
         user_message.log_to_mongo()
 
         emotions_list = []
         emotions_thread = threading.Thread(
-            target=self.extract_emotions, args=[initial_conv, message, emotions_list]
+            target=self.extract_emotions, args=[message, emotions_list]
         )
         emotions_thread.start()
 
@@ -190,18 +190,21 @@ class Session(MetadataMixIn, MongoMixin):
         print(user_message)
         user_message.log_to_mongo()
 
+        self.user_messages += [user_message]
+
         emotions_thread.join()
 
         return self.run_main_prompt(
-            user_message,
             emotions_list,
         )
 
-    def extract_emotions(self, conversation, last_sentence, emotions_list):
+    def extract_emotions(self, curr_user_message, emotions_list):
         """Extract Emotions."""
+        prev_conversation = message_list_to_convo_prompt(self.prev_messages)
+        last_texts = self.format_recent_user_messages() + f"{curr_user_message}\n"
         emotion_result = compile_and_run_prompt(
             EmotionExtractionPrompt,
-            {"conversation": conversation, "sentence": last_sentence},
+            {"conversation": prev_conversation, "texts": last_texts},
         )
         emotions = [emotion.strip().lower() for emotion in emotion_result.split(",")]
         emotions_list.extend(emotions)
@@ -217,17 +220,23 @@ class Session(MetadataMixIn, MongoMixin):
         matches = search_for_str(message, metadata_filter=metadata_filter)
         return format_memories(matches)
 
+    def format_recent_user_messages(self) -> str:
+        """Format all recent user messages."""
+        user_message_str = ""
+        for message in self.user_messages:
+            user_message_str += f"{message}\n"
+        return user_message_str
+
     def run_main_prompt(
         self,
-        last_message: Message,
         emotions_list: List[str],
     ):
         # TODO: Update with all entities mentioned in the past 3-5 messages
         # Build an LRU cache
-        entities = last_message.entities
+        entities = self.user_messages[-1].entities
 
-        prev_messages = messages_for_chat_model(self.messages)
-        message_list = prev_messages + [last_message.as_langchain_message()]
+        prev_messages = messages_for_chat_model(self.prev_messages)
+        message_list = prev_messages + messages_for_chat_model(self.user_messages)
 
         ## General Information about Conversant
         age = self.user.get("age", 14)
@@ -261,7 +270,7 @@ class Session(MetadataMixIn, MongoMixin):
                 "personality": self_personality,
                 "self_sentiment": self_sentiment,
                 "goals": goals,
-                "message": last_message.content,
+                "message": self.format_recent_user_messages(),
             },
             messages=deepcopy(message_list),
         )
@@ -272,13 +281,13 @@ class Session(MetadataMixIn, MongoMixin):
                 "personality": self_personality,
                 "thoughts": thought_res,
                 "recent_people_info": recent_people_info,
-                "message": last_message.content,
+                "message": self.format_recent_user_messages(),
             },
             messages=deepcopy(message_list),
         )
 
         relevant_memories = self.get_relevant_entity_memories(
-            last_message.content, entities
+            self.format_recent_user_messages(), entities
         )
         emotions = ", ".join(emotions_list)
 
@@ -288,7 +297,7 @@ class Session(MetadataMixIn, MongoMixin):
             MainChatPrompt,
             {
                 "self_name": self_name,
-                "message": last_message.content,
+                "message": self.format_recent_user_messages(),
                 "emotions": emotions,
                 "recent_people_info": recent_people_info,
                 "relevant_memories": relevant_memories,
@@ -309,28 +318,30 @@ class Session(MetadataMixIn, MongoMixin):
 
         ai_message = Message(chat_response, "ai", self.session_id)
         self.last_message_sent = ai_message.created_time
-        ai_message.log_to_mongo()
 
+        return ai_message
+
+    def update_on_send(self, ai_message: Message):
+        ai_message.log_to_mongo()
         update_thread = threading.Thread(
             target=self.async_update_chat_info,
-            args=[last_message, ai_message],
+            args=[ai_message],
         )
         update_thread.start()
 
         process_memory_thread = threading.Thread(
-            target=self.process_message_as_memory,
-            args=[last_message, relevant_memories],
+            target=self.process_interaction_as_memory,
         )
         process_memory_thread.start()
-
         self.log_to_mongo()
-        return chat_response
 
-    def process_message_as_memory(
-        self, last_user_message: Message, relevant_memories: str
-    ) -> None:
+    def process_interaction_as_memory(self) -> None:
+        last_user_message = self.user_messages[-1]
+        relevant_memories = self.get_relevant_entity_memories(
+            self.format_recent_user_messages(), last_user_message.entities
+        )
         entities = last_user_message.entities
-        formatted_convo = message_list_to_convo_prompt(self.messages)
+        formatted_convo = message_list_to_convo_prompt(self.prev_messages)
         names = ", ".join([entity.names[0] for entity in entities])
         # First determine if this message should be saved as a memory
         is_important_memory = compile_and_run_prompt(
@@ -339,7 +350,7 @@ class Session(MetadataMixIn, MongoMixin):
                 "prior_info": relevant_memories,
                 "entities": names,
                 "conversation": formatted_convo,
-                "message": last_user_message.content,
+                "message": self.format_recent_user_messages(),
             },
         )
         should_save = is_important_memory.split(":")[0].strip()
@@ -355,7 +366,7 @@ class Session(MetadataMixIn, MongoMixin):
             print(f"TRIGGERING ENTITY {entity.names[0]} UPDATE")
             entity.trigger_update(last_user_message.content)
             print(f"FINISHED ENTITY {entity.names[0]} UPDATE")
-        content_to_save = last_user_message.content
+        content_to_save = self.format_recent_user_messages()
 
         # If so, the save it the metadata
         memory_metadata = Metadata()
@@ -377,13 +388,13 @@ class Session(MetadataMixIn, MongoMixin):
         # Save Memory
         upsert_piece(content_to_save, memory_metadata)
 
-    def async_update_chat_info(self, last_user_message, ai_message) -> None:
+    def async_update_chat_info(self, ai_message) -> None:
         personality = self.session_info.get("personality")
         self_name = self.session_info.get("name")
-        non_ai_messages = messages_for_chat_model(self.messages + [last_user_message])
-        all_messages = messages_for_chat_model(
-            self.messages + [last_user_message, ai_message]
+        non_ai_messages = messages_for_chat_model(
+            self.prev_messages + self.user_messages
         )
+        all_messages = non_ai_messages + messages_for_chat_model([ai_message])
 
         sentiment_res = compile_and_run_prompt(
             AISentimentPrompt,
