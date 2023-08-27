@@ -113,6 +113,7 @@ class Session(MetadataMixIn, MongoMixin):
                     entities=entities,
                 )
             ] + last_messages
+            print(message)
 
         return cls(
             user,
@@ -224,7 +225,7 @@ class Session(MetadataMixIn, MongoMixin):
         """Format all recent user messages."""
         user_message_str = ""
         for message in self.user_messages:
-            user_message_str += f"{message}\n"
+            user_message_str += f"{message.content}\n"
         return user_message_str
 
     def run_main_prompt(

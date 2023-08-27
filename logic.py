@@ -49,13 +49,16 @@ def talk(user, new_message):
         time.sleep(sleep_time)
     last_message_id = curr_session.user_messages[-1].message_id
 
-    messages = mongo_read("Messages", {"session_id": session_id}, find_many=True)
+    messages = mongo_read("Messages", {"session_id": curr_session.session_id}, find_many=True)
     last_message = None
 
     # Get Newest Message
     for message in messages.sort("created_time", -1):
         last_message = message
         break
+
+    print(last_message_id)
+    print(last_message)
 
     if last_message is None or last_message.get("message_id", None) == last_message_id:
         send_message(next_message.content, user["number"])

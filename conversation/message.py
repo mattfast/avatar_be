@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import List, Optional, Tuple
 from uuid import uuid4
+from datetime import timezone
 
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
@@ -27,7 +28,7 @@ class Message(MetadataMixIn, MongoMixin):
         self.role = role
         self.session_id = session_id
         self.speaker = speaker or role
-        self.created_time = datetime.now()
+        self.created_time = datetime.now(tz=timezone.utc)
         self.message_id = message_id or str(uuid4())
         self.entities = entities or []
         self.message_type = message_type
