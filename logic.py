@@ -49,7 +49,9 @@ def talk(user, new_message):
         time.sleep(sleep_time)
     last_message_id = curr_session.user_messages[-1].message_id
 
-    messages = mongo_read("Messages", {"session_id": curr_session.session_id}, find_many=True)
+    messages = mongo_read(
+        "Messages", {"session_id": curr_session.session_id}, find_many=True
+    )
     last_message = None
 
     # Get Newest Message

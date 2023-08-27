@@ -1,6 +1,6 @@
 import threading
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from uuid import uuid4
 
@@ -65,7 +65,7 @@ class Session(MetadataMixIn, MongoMixin):
         self.prev_messages, self.user_messages = partition_prev_messages(messages)
         self.session_info = session_info or default_ai_session_info
         self.session_user_info = session_user_info or default_user_session_info
-        self.last_message_sent = last_message_sent or datetime.now()
+        self.last_message_sent = last_message_sent or datetime.now(tz=timezone.utc)
 
     @property
     def metadata_key(self) -> str:
@@ -371,7 +371,7 @@ class Session(MetadataMixIn, MongoMixin):
 
         # If so, the save it the metadata
         memory_metadata = Metadata()
-        curr_time_secs = datetime.now().timestamp()
+        curr_time_secs = datetime.now(tz=timezone.utc).timestamp()
         memory_metadata.add(self)
         memory_metadata.kv_add(METADATA_MEMORY_TYPE_KEY, MemoryType.GENERIC.value)
         memory_metadata.kv_add(METADATA_ACCESSED_KEY, curr_time_secs)

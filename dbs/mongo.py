@@ -144,20 +144,21 @@ def mongo_bulk_update(collection, query_list, update_list):
     print(result)
     return result
 
+
 def mongo_dedupe(collection, filter):
     try:
         entries = list(mongo_read(collection, filter, find_many=True))
         sorted_entries = sorted(entries, key=lambda x: x["videoId"])
         curr_id = ""
         ids_to_delete = []
-        for entry in sorted_entries: 
+        for entry in sorted_entries:
             if curr_id != entry["videoId"]:
                 curr_id = entry["videoId"]
             else:
                 ids_to_delete.append(entry["_id"])
 
         if len(ids_to_delete) > 0:
-            result = mongo_db[collection].delete_many({ "_id": { "$in": ids_to_delete } })
+            result = mongo_db[collection].delete_many({"_id": {"$in": ids_to_delete}})
         else:
             result = None
 

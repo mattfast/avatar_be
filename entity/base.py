@@ -1,6 +1,6 @@
 import threading
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 from uuid import uuid4
@@ -84,9 +84,9 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
 
     mentions: int = 0
 
-    created_at: datetime = datetime.now()
+    created_at: datetime = datetime.now(tz=timezone.utc)
 
-    last_updated: datetime = datetime.now()
+    last_updated: datetime = datetime.now(tz=timezone.utc)
 
     @classmethod
     def create_new(
@@ -141,7 +141,7 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
             "names": self.names,
             "info_dict": self.info_dict,
             "created_at": self.created_at,
-            "last_updated": datetime.now(),
+            "last_updated": self.last_updated,
             "user_reflection_dict": self.convert_reflection_dict_for_mongo(),
         }
 
@@ -187,6 +187,8 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
         )
         if sentiment_res != "NO CHANGE":
             self.set_sentiment(sentiment_res)
+
+        self.last_updated = datetime.now(tz=timezone.utc)
 
         # Log changes to entity in mongo
         self.log_to_mongo()
@@ -246,13 +248,20 @@ class EntityName(BaseModel):
 
     name: str
     user_id: str
-    created_at: datetime = datetime.now()
-    last_updated: datetime = datetime.now()
+    created_at: datetime = datetime.now(tz=timezone.utc)
     entity_id: Optional[str] = None
 
     @classmethod
-    def from_vals(cls, name, user_id, entity_id: Optional[str] = None):
-        return cls(name=name, user_id=user_id, entity_id=entity_id)
+    def from_vals(
+        cls,
+        name,
+        user_id,
+        entity_id: Optional[str] = None,
+        created_at: datetime = datetime.now(tz=timezone.utc),
+    ):
+        return cls(
+            name=name, user_id=user_id, created_at=created_at, entity_id=entity_id
+        )
 
     def to_dict(self):
         return {
@@ -260,7 +269,6 @@ class EntityName(BaseModel):
             "user_id": self.user_id,
             "entity_id": self.entity_id,
             "created_at": self.created_at,
-            "last_updated": self.last_updated,
         }
 
     def log_to_mongo(self) -> None:
