@@ -1,23 +1,23 @@
 import functools
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 from TikTokApi import TikTokApi
 
 from common.execute import compile_and_run_prompt
 from conversation.message import Message
 from conversation.session import Session
-from tiktok.prompt import TagTikToksPrompt
-from users import get_users
 from dbs.mongo import (
     mongo_bulk_update,
     mongo_count,
+    mongo_dedupe,
     mongo_delete_many,
     mongo_read,
     mongo_write_many,
-    mongo_dedupe
 )
 from messaging import send_message
+from tiktok.prompt import TagTikToksPrompt
+from users import get_users
 
 DESIRED_VIDEOS = 700
 
@@ -40,7 +40,7 @@ async def trending_videos():
             try:
                 async for video in api.trending.videos(count=num_to_fetch):
                     d = video.as_dict
-                    now = datetime.now()
+                    now = datetime.now(tz=timezone.utc)
                     entries.append(
                         {
                             "videoId": d["id"],
@@ -116,10 +116,10 @@ async def send_videos():
             new_tiktoks_arr = user["tiktoks"].append(tiktok["videoId"])
         else:
             print("tiktoks field doesn't exist")
-            new_tiktoks_arr = [ tiktok["videoId"] ]
+            new_tiktoks_arr = [tiktok["videoId"]]
 
-        query_list.append({ "number": user["number"] })
-        update_list.append({ "$set": { "tiktoks": new_tiktoks_arr }})
+        query_list.append({"number": user["number"]})
+        update_list.append({"$set": {"tiktoks": new_tiktoks_arr}})
 
         # Get user session
         session_id = user.get("session_id", None)
@@ -130,10 +130,17 @@ async def send_videos():
 
         # Log messages to mongo
         first_message = "hey, thought you'd like this:"
-        second_message = url + ". " + "This is a TikTok video with the following description: " + tiktok["description"]
+        second_message = (
+            url
+            + ". "
+            + "This is a TikTok video with the following description: "
+            + tiktok["description"]
+        )
 
         ai_first_message = Message(first_message, "ai", curr_session.session_id)
-        ai_second_message = Message(second_message, "ai", curr_session.session_id, message_type="TikTok")
+        ai_second_message = Message(
+            second_message, "ai", curr_session.session_id, message_type="TikTok"
+        )
 
         curr_session.last_message_sent = ai_second_message.created_time
         curr_session.log_to_mongo()
@@ -143,12 +150,11 @@ async def send_videos():
         # send messages
         send_message(first_message, user["number"])
         send_message(url, user["number"])
-    
+
     print(query_list)
     print(update_list)
-    
-    mongo_bulk_update("Users", query_list, update_list)
 
+    mongo_bulk_update("Users", query_list, update_list)
 
 
 async def tag_videos():
