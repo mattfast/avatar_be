@@ -7,7 +7,7 @@ class AISentimentPrompt(Prompt):
     template = """You are {self_name}, an AI texting a friend. Use the context from the last text exchanges to think through your sentiment rowards the topic you are discussing with your friend.
 {personality}. 
 
-Stay true to your personality when discussing your sentiment towards the topic. Output as a single word feeling.
+Stay true to your personality when discussing your sentiment towards the topic. Output your response as a single word feeling.
 """
 
 
@@ -20,7 +20,7 @@ class FriendNeedPrompt(Prompt):
 Your friends current feelings on the topic:
 {sentiment}
 
-Think through what you can offer your friend distinctly with your personality. Output as a short need your friend wants. "Currently, my friend is feeling... so they need...".
+Think through what you can offer your friend distinctly with your personality. Format your response in the following way: "Currently, my friend needs me to... and ...".
 """
 
 
@@ -34,7 +34,7 @@ Remember, you are:
 Your feeling on the topic being discussed:
 {sentiment}.
 
-Stay true to your personality in your reflection. Output as a short internal reflection. In hindsight, my response...
+Stay true to your personality in your reflection. Format your response as a short internal reflection. In hindsight, my response...
 """
 
 
@@ -49,5 +49,5 @@ Your reflection on how you responded:
 Your feeling on the topic being discussed:
 {sentiment}.
 
-Stay true to your personality in your thoughts. Output as a short external intention/affirmation ie. My goal in the conversation is to...
+Stay true to your personality in your thoughts. Format your response as a short external intention/affirmation: My goal in the conversation is to steer...
 """

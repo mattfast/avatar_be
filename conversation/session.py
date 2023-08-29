@@ -34,7 +34,7 @@ from conversation.prompts.emotion_extraction import (
     PersonIntentPrompt,
     TopicSentimentPrompt,
 )
-from conversation.prompts.entity_resolution import ProperNounExtraction
+from conversation.prompts.entity_resolution import ProperNounExtractionPrompt
 from conversation.prompts.memory_creation import IsImportantMemoryPrompt
 from conversation.utils import clean_json_list_output, clean_sentence, format_memories
 from dbs.mongo import MongoMixin, mongo_read, mongo_upsert
@@ -143,7 +143,7 @@ class Session(MetadataMixIn, MongoMixin):
         print(message)
         texts = self.format_recent_user_messages() + f"{message}\n"
         raw_entity_output = compile_and_run_prompt(
-            ProperNounExtraction,
+            ProperNounExtractionPrompt,
             {"texts": texts},
         )
 
@@ -306,6 +306,7 @@ class Session(MetadataMixIn, MongoMixin):
                 "planned_response": self_respond,
                 "name": name,
                 "age": age,
+                "self_personality": self_personality,
                 "personality": personality,
                 "sentiment": sentiment,
                 "current_intent": current_intent,

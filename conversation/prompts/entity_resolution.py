@@ -34,8 +34,8 @@ Rewritten Sentence:
 """
 
 
-class ProperNounExtraction(Prompt):
-    name = "ProperNounExtraction"
+class ProperNounExtractionPrompt(Prompt):
+    name = "ProperNounExtractionPrompt"
     version = "0.0.1"
     model = "chat"
     template = """Output all proper noun names or titles, if any, in the following texts as a comma separated list. Include whole modifiers in your response.

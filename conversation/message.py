@@ -10,6 +10,7 @@ from dbs.mongo import MongoMixin, mongo_upsert
 from entity.base import Entity
 
 ROLE_TO_CLASS_DICT = {"ai": AIMessage, "human": HumanMessage, "system": SystemMessage}
+ROLE_TO_SPEAKER_DICT = {"ai": "you", "human": "your friend", "system": "N/A"}
 
 
 class Message(MetadataMixIn, MongoMixin):
@@ -26,7 +27,7 @@ class Message(MetadataMixIn, MongoMixin):
         self.content = content
         self.role = role
         self.session_id = session_id
-        self.speaker = speaker or role
+        self.speaker = speaker or ROLE_TO_SPEAKER_DICT[role]
         self.created_time = datetime.now(tz=timezone.utc)
         self.message_id = message_id or str(uuid4())
         self.entities = entities or []
