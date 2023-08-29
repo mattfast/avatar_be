@@ -29,11 +29,7 @@ def talk(user, new_message, is_check=False):
         mongo_upsert("Users", {"number": user_num}, {"user_id": id})
         user["user_id"] = id
 
-    session_id = user.get("session_id", None)
-    if session_id is None:
-        curr_session = Session(user)
-    else:
-        curr_session = Session.from_user(user)
+    curr_session = Session.from_user(user)
 
     user["session_id"] = curr_session.session_id
     insertion_dict = {"number": user_num, "session_id": curr_session.session_id}

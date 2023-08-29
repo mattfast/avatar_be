@@ -88,6 +88,19 @@ class Session(MetadataMixIn, MongoMixin):
         if session is None:
             return Session(user)
 
+        last_sent_time = session.get(
+            "last_message_sent", datetime.now(tz=timezone.utc)
+        ).replace(tzinfo=timezone.utc)
+        print(last_sent_time)
+        curr_time = datetime.now(tz=timezone.utc)
+        try:
+            duration_diff = (curr_time - last_sent_time).seconds
+        except:
+            duration_diff = 0
+
+        if duration_diff >= 18000:
+            return Session(user)
+
         session_info = session.get("session_info", None)
         session_user_info = session.get("session_user_info", None)
         messages = mongo_read("Messages", {"session_id": session_id}, find_many=True)
@@ -319,8 +332,6 @@ class Session(MetadataMixIn, MongoMixin):
         print(chat_response)
 
         ai_message = Message(chat_response, "ai", self.session_id)
-        self.last_message_sent = ai_message.created_time
-
         return ai_message
 
     def update_on_send(self, ai_message: Message):
@@ -335,6 +346,7 @@ class Session(MetadataMixIn, MongoMixin):
             target=self.process_interaction_as_memory,
         )
         process_memory_thread.start()
+        self.last_message_sent = ai_message.created_time
         self.log_to_mongo()
 
     def process_interaction_as_memory(self) -> None:
