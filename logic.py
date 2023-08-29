@@ -12,7 +12,7 @@ from messaging import send_message
 MAX_WAIT_TIME_SECS = 5
 
 
-def talk(user, new_message):
+def talk(user, new_message, is_check=False):
     """Talk with a specific player."""
     print("USER")
     print(user)
@@ -58,6 +58,6 @@ def talk(user, new_message):
     print(last_message_id)
     print(last_message)
 
-    if last_message is None or last_message.get("message_id", None) == last_message_id:
+    if last_message is None or last_message.get("message_id", None) == last_message_id and not is_check:
         send_message(next_message.content, user["number"])
         curr_session.update_on_send(next_message)
