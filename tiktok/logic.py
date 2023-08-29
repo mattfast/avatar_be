@@ -93,25 +93,37 @@ async def delete_videos():
         mongo_delete_many("TikToks", number=num_to_delete)
 
 
-async def send_videos():
+async def send_videos(is_check=False):
 
     users = list(get_users())
     tiktoks = list(mongo_read("TikToks", {}, find_many=True))
     print(users)
+    print(tiktoks)
 
     query_list = []
     update_list = []
+    print("ABOUT TO ENTER LOOP")
     for user in users:
+        print("GOT HERE")
         tiktok = random.choice(tiktoks)
-        while "tiktoks" in user and tiktok["videoId"] in user["tiktoks"]:
+        print(tiktok)
+        print(user)
+        print(tiktok["videoId"])
+        if "tiktoks" in user:
+            print(user["tiktoks"])
+        while "tiktoks" in user and user["tiktoks"] is not None and tiktok["videoId"] in user["tiktoks"]:
             tiktok = random.choice(tiktoks)
+        
+        print("GOT HERE2")
 
         author = tiktok["author"]
         videoId = tiktok["videoId"]
         url = f"https://www.tiktok.com/@{author}/video/{videoId}"
 
+        print("GOT HERE3")
+
         new_tiktoks_arr = []
-        if "tiktoks" in user:
+        if "tiktoks" in user and user["tiktoks"] is not None:
             print("tiktoks field exists")
             new_tiktoks_arr = user["tiktoks"].append(tiktok["videoId"])
         else:
@@ -142,19 +154,21 @@ async def send_videos():
             second_message, "ai", curr_session.session_id, message_type="TikTok"
         )
 
-        curr_session.last_message_sent = ai_second_message.created_time
-        curr_session.log_to_mongo()
-        ai_first_message.log_to_mongo()
-        ai_second_message.log_to_mongo()
-
         # send messages
-        send_message(first_message, user["number"])
-        send_message(url, user["number"])
+        if not is_check:
+            curr_session.last_message_sent = ai_second_message.created_time
+            curr_session.log_to_mongo()
+            ai_first_message.log_to_mongo()
+            ai_second_message.log_to_mongo()
+
+            send_message(first_message, user["number"])
+            send_message(url, user["number"])
 
     print(query_list)
     print(update_list)
 
-    mongo_bulk_update("Users", query_list, update_list)
+    if not is_check:
+        mongo_bulk_update("Users", query_list, update_list)
 
 
 async def tag_videos():

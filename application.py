@@ -6,7 +6,7 @@ from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import carrier, is_prod, lambda_token, sendblue_signing_secret
+from keys import carrier, is_prod, lambda_token, sendblue_signing_secret, checkly_token
 from logic import talk
 from tiktok.logic import delete_videos, send_videos, tag_videos, trending_videos
 
@@ -122,6 +122,37 @@ def tag_tiktoks():
     t.start()
 
     return "tiktok job initiated", 202
+
+
+## CHECK METHODS
+@app.route("/send-tiktoks-check", methods=["POST"])
+def send_tiktoks_check():
+    checkly_token_header = request.headers.get("checkly-token-header")
+
+    if checkly_token_header != checkly_token:
+        return "checkly token invalid", 401
+
+    try:
+        asyncio.run(send_videos(is_check=True))
+    except Exception as e:
+        return f"internal error: {e}", 500
+        
+
+    return "tiktok job completed", 200
+
+@app.route("/bot-check", methods=["POST"])
+def message_check():
+    user, is_first = login("+11111111111")
+    if user is None:
+        print("ERROR CREATING OR FINDING USER")
+        return "unable to create or find user", 500
+
+    try:
+        res = talk(user, "test msg", is_check=True)
+    except Exception as e:
+        return f"error generating message: {e}", 500
+
+    return "successfully generated", 200
 
 
 if __name__ == "__main__":
