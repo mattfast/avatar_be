@@ -9,6 +9,7 @@ from auth import login
 from keys import carrier, is_prod, lambda_token, sendblue_signing_secret, checkly_token
 from logic import talk
 from tiktok.logic import delete_videos, send_videos, tag_videos, trending_videos
+from messaging import send_message
 
 app = Flask(__name__)
 CORS(app)
@@ -159,6 +160,20 @@ def message_check():
 
     return "successfully generated", 200
 
+@app.route("/sendblue-check", methods=["post"])
+def sendblue_check():
+    checkly_token_header = request.headers.get("checkly-token-header")
+
+    if checkly_token_header != checkly_token:
+        return "checkly token invalid", 401
+
+    try:
+        send_message("test message", "+12812240743")
+        send_message("test message", "+14803523815")
+    except Exception as e:
+        return f"error generating message: {e}", 500
+
+    return "successfully generated", 200
 
 if __name__ == "__main__":
     app.debug = True
