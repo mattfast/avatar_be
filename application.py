@@ -142,6 +142,11 @@ def send_tiktoks_check():
 
 @app.route("/bot-check", methods=["POST"])
 def message_check():
+    checkly_token_header = request.headers.get("checkly-token-header")
+
+    if checkly_token_header != checkly_token:
+        return "checkly token invalid", 401
+
     user, is_first = login("+11111111111")
     if user is None:
         print("ERROR CREATING OR FINDING USER")

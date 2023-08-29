@@ -97,24 +97,13 @@ async def send_videos(is_check=False):
 
     users = list(get_users())
     tiktoks = list(mongo_read("TikToks", {}, find_many=True))
-    print(users)
-    print(tiktoks)
 
     query_list = []
     update_list = []
-    print("ABOUT TO ENTER LOOP")
     for user in users:
-        print("GOT HERE")
         tiktok = random.choice(tiktoks)
-        print(tiktok)
-        print(user)
-        print(tiktok["videoId"])
-        if "tiktoks" in user:
-            print(user["tiktoks"])
         while "tiktoks" in user and user["tiktoks"] is not None and tiktok["videoId"] in user["tiktoks"]:
             tiktok = random.choice(tiktoks)
-        
-        print("GOT HERE2")
 
         author = tiktok["author"]
         videoId = tiktok["videoId"]
@@ -124,10 +113,8 @@ async def send_videos(is_check=False):
 
         new_tiktoks_arr = []
         if "tiktoks" in user and user["tiktoks"] is not None:
-            print("tiktoks field exists")
             new_tiktoks_arr = user["tiktoks"].append(tiktok["videoId"])
         else:
-            print("tiktoks field doesn't exist")
             new_tiktoks_arr = [tiktok["videoId"]]
 
         query_list.append({"number": user["number"]})
