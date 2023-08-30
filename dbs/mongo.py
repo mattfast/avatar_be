@@ -118,6 +118,19 @@ def mongo_delete_many(collection, number=100):
     return result
 
 
+def mongo_delete(collection, filter):
+    try:
+        result = mongo_db[collection].delete_many(filter)
+    except pymongo.errors.OperationFailure:
+        print("MONGO DELETE ERROR")
+        print(f"Collection: {collection}")
+        print(f"Filter: {filter}")
+        result = None
+
+    print(result)
+    return result
+
+
 def mongo_bulk_update(collection, query_list, update_list):
     try:
         bulk = mongo_db[collection].initialize_unordered_bulk_op()

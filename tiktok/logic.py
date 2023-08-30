@@ -14,9 +14,10 @@ from dbs.mongo import (
     mongo_delete_many,
     mongo_read,
     mongo_write_many,
+    mongo_delete
 )
 from messaging import send_message
-from tiktok.prompt import TagTikToksPrompt
+from tiktok.prompt import TagTikToksPrompt, TikTokLanguagePrompt
 from users import get_users
 
 DESIRED_VIDEOS = 700
@@ -77,6 +78,11 @@ async def trending_videos():
 async def delete_videos():
     print("about to delete videos")
 
+    # delete non-english videos
+    res = mongo_delete("TikToks", { "language": { "$ne": "English" } })
+    print("DELETED NON-ENGLISH")
+    print(res)
+
     # dedupe collection
     res = mongo_dedupe("TikToks", {})
     print("DEDUPED")
@@ -96,11 +102,14 @@ async def delete_videos():
 async def send_videos(is_check=False):
 
     users = list(get_users())
-    tiktoks = list(mongo_read("TikToks", {}, find_many=True))
+    tiktoks = list(mongo_read("TikToks", { "tags": "Pets and Animals" }, find_many=True))
 
     query_list = []
     update_list = []
     for user in users:
+        if user["number"] != "+12812240743":
+            continue
+    
         tiktok = random.choice(tiktoks)
         while "tiktoks" in user and user["tiktoks"] is not None and tiktok["videoId"] in user["tiktoks"]:
             tiktok = random.choice(tiktoks)
@@ -108,8 +117,6 @@ async def send_videos(is_check=False):
         author = tiktok["author"]
         videoId = tiktok["videoId"]
         url = f"https://www.tiktok.com/@{author}/video/{videoId}"
-
-        print("GOT HERE3")
 
         new_tiktoks_arr = []
         if "tiktoks" in user and user["tiktoks"] is not None:
@@ -187,6 +194,44 @@ async def tag_videos():
                 update_list.append({"$set": {"tags": [tag]}})
             except:
                 print("ERROR: output not formatted correctly")
+
+    print(query_list)
+    print(update_list)
+
+    mongo_bulk_update("TikToks", query_list, update_list)
+
+async def detect_video_languages():
+
+    tiktoks = list(mongo_read("TikToks", {"language": {"$exists": False}}, find_many=True))
+    print("TIKTOKS TO DETECT LANGUAGE:")
+    print(len(tiktoks))
+    query_list = []
+    update_list = []
+    for i in range(0, len(tiktoks), 15):
+        print("RUNNING FOR RANGE")
+        print(i)
+        print(i + 15)
+        upper_bound = min(i + 15, len(tiktoks))
+        batch = tiktoks[i:upper_bound]
+        video_desc_str = functools.reduce(
+            lambda a, b: a + f"Tweet {b['videoId']}: {b['description']}\n", batch, ""
+        )
+        res = compile_and_run_prompt(
+            TikTokLanguagePrompt, {"video_descriptions": video_desc_str}
+        )
+        res_list = res.split("\n")
+        res_list = [i for i in res_list if i]  # remove empty strings
+        for v in res_list:
+            try:
+                terms = v.split(":")
+                videoId = terms[0].split(" ")[1]
+                language = terms[1][1:]
+                query_list.append({"videoId": videoId})
+                update_list.append({"$set": {"language": language}})
+            except:
+                print("ERROR: output not formatted correctly")
+        
+        print(res_list)
 
     print(query_list)
     print(update_list)
