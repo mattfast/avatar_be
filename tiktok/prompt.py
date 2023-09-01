@@ -1,7 +1,5 @@
 from common.prompt import Prompt
 
-
-## Pronoun resolution also needs to resolve more vague phrases. ie "that chick" or "that person"
 class TagTikToksPrompt(Prompt):
     name = "TagTikToksPrompt"
     version = "0.0.1"
@@ -51,6 +49,30 @@ Output your answer in the same format as the following examples:
 Video 1: DIY and Crafting
 
 Video 2: Pets and Animals
+##### End Examples #####
+
+Answer:
+"""
+
+class TikTokLanguagePrompt(Prompt):
+    name = "TikTokLanguagePrompt"
+    version = "0.0.1"
+    template = """Your task is to determine what language a list of Tweets are each written in.
+
+Here are the tweet numbers and their corresponding texts:
+
+##### Start Tweets #####
+{video_descriptions}
+##### End Tweets #####
+
+Output your answer in the same format as the following examples:
+
+##### Start Examples #####
+Tweet 1: Russian
+
+Tweet 2: Chinese
+
+Tweet 3: English
 ##### End Examples #####
 
 Answer:

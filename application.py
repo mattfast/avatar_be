@@ -9,7 +9,13 @@ from auth import login
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
 from messaging import send_message
-from tiktok.logic import delete_videos, send_videos, tag_videos, trending_videos
+from tiktok.logic import (
+    delete_videos,
+    detect_video_languages,
+    send_videos,
+    tag_videos,
+    trending_videos,
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -120,6 +126,22 @@ def tag_tiktoks():
         return "lambda token invalid", 401
 
     t = threading.Thread(target=asyncio.run, args=(tag_videos(),))
+    t.start()
+
+    return "tiktok job initiated", 202
+
+
+@app.route("/detect-language-tiktoks", methods=["POST"])
+def detect_language_tiktoks():
+    lambda_token_header = request.headers.get("lambda-auth-token")
+
+    print(lambda_token)
+    print(lambda_token_header)
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    t = threading.Thread(target=asyncio.run, args=(detect_video_languages(),))
     t.start()
 
     return "tiktok job initiated", 202
