@@ -11,10 +11,10 @@ from dbs.mongo import (
     mongo_bulk_update,
     mongo_count,
     mongo_dedupe,
+    mongo_delete,
     mongo_delete_many,
     mongo_read,
     mongo_write_many,
-    mongo_delete
 )
 from messaging import send_message
 from tiktok.prompt import TagTikToksPrompt, TikTokLanguagePrompt
@@ -79,7 +79,7 @@ async def delete_videos():
     print("about to delete videos")
 
     # delete non-english videos
-    res = mongo_delete("TikToks", { "language": { "$ne": "English" } })
+    res = mongo_delete("TikToks", {"language": {"$ne": "English"}})
     print("DELETED NON-ENGLISH")
     print(res)
 
@@ -102,14 +102,14 @@ async def delete_videos():
 async def send_videos(is_check=False):
 
     users = list(get_users())
-    tiktoks = list(mongo_read("TikToks", { "tags": "Pets and Animals" }, find_many=True))
+    tiktoks = list(mongo_read("TikToks", {"tags": "Pets and Animals"}, find_many=True))
 
     query_list = []
     update_list = []
     for user in users:
         if user["number"] != "+12812240743":
             continue
-    
+
         tiktok = random.choice(tiktoks)
         while (
             "tiktoks" in user
@@ -204,9 +204,12 @@ async def tag_videos():
 
     mongo_bulk_update("TikToks", query_list, update_list)
 
+
 async def detect_video_languages():
 
-    tiktoks = list(mongo_read("TikToks", {"language": {"$exists": False}}, find_many=True))
+    tiktoks = list(
+        mongo_read("TikToks", {"language": {"$exists": False}}, find_many=True)
+    )
     print("TIKTOKS TO DETECT LANGUAGE:")
     print(len(tiktoks))
     query_list = []
@@ -234,7 +237,7 @@ async def detect_video_languages():
                 update_list.append({"$set": {"language": language}})
             except:
                 print("ERROR: output not formatted correctly")
-        
+
         print(res_list)
 
     print(query_list)
