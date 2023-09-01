@@ -102,7 +102,11 @@ async def send_videos(is_check=False):
     update_list = []
     for user in users:
         tiktok = random.choice(tiktoks)
-        while "tiktoks" in user and user["tiktoks"] is not None and tiktok["videoId"] in user["tiktoks"]:
+        while (
+            "tiktoks" in user
+            and user["tiktoks"] is not None
+            and tiktok["videoId"] in user["tiktoks"]
+        ):
             tiktok = random.choice(tiktoks)
 
         author = tiktok["author"]
