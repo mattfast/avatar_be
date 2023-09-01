@@ -325,9 +325,7 @@ class Session(MetadataMixIn, MongoMixin):
         intelligence_thread.start()
 
         ## General Information about Conversant
-
-        # Session Specific Information About Conversant
-        current_need = self.session_user_info.get("need", None)
+        ## Session Specific Information About Conversant
 
         ## Information about ai
         self_name = self.session_info.get("name")
@@ -372,9 +370,6 @@ class Session(MetadataMixIn, MongoMixin):
             messages=deepcopy(message_list),
         )
 
-        relevant_memories = self.get_relevant_entity_memories(
-            self.format_recent_user_messages(), entities
-        )
         emotions = ", ".join(emotions_list)
 
         examples = default_writing_style
@@ -503,26 +498,6 @@ class Session(MetadataMixIn, MongoMixin):
         if len(sentiment_res.split(" ")) > 4:
             sentiment_res = "neutral"
 
-        # reflection_res = compile_and_run_prompt(
-        #     AIReflectionPrompt,
-        #     {
-        #         "self_name": self_name,
-        #         "personality": personality,
-        #         "sentiment": sentiment_res,
-        #     },
-        #     messages=deepcopy(all_messages),
-        # )
-        # goal_res = compile_and_run_prompt(
-        #     AIGoalPrompt,
-        #     {
-        #         "self_name": self_name,
-        #         "personality": personality,
-        #         "sentiment": sentiment_res,
-        #         "reflection": reflection_res,
-        #     },
-        #     messages=deepcopy(all_messages),
-        # )
-
         self.session_info.update(
             {
                 "sentiment": sentiment_res,
@@ -530,33 +505,6 @@ class Session(MetadataMixIn, MongoMixin):
             }
         )
         self.log_to_mongo()
-
-        # friend_sentiment = compile_and_run_prompt(
-        #     TopicSentimentPrompt, {}, messages=deepcopy(non_ai_messages)
-        # )
-        # friend_intent = compile_and_run_prompt(
-        #     PersonIntentPrompt, {}, messages=deepcopy(non_ai_messages)
-        # )
-        # prev_need = self.session_user_info.get("need", None)
-        # friend_need = compile_and_run_prompt(
-        #     FriendNeedPrompt,
-        #     {
-        #         "self_name": self_name,
-        #         "sentiment": friend_sentiment,
-        #         "intent": friend_intent,
-        #         "previous_need": prev_need,
-        #     },
-        #     messages=deepcopy(all_messages),
-        # )
-        # self.session_user_info.update(
-        #     {
-        #         "sentiment": friend_sentiment,
-        #         "intent": friend_intent,
-        #         "need": friend_need,
-        #     }
-        # )
-        # self.log_to_mongo()
-        return None
 
 
 # Hey! Need to ask you a few questions first! This would be part of app flow
