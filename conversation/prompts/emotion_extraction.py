@@ -17,15 +17,21 @@ Emotions Present:"""
 class TopicSentimentPrompt(Prompt):
     name = "TopicSentimentPrompt"
     version = "0.0.1"
-    template = """Using the conversation as context, output the two main emotions expressed by the speaker in the last sentence towards the topic of conversation. Output as a single word feeling.
+    template = """Using the conversation as context, output the main emotions expressed by the speaker in the conversation. Output as a single word feeling.
 """
 
 
 class PersonIntentPrompt(Prompt):
     name = "PersonIntentPrompt"
+    verbose = True
     version = "0.0.1"
-    template = """Using the conversation as context, output the overall intent expressed by the speaker in the last sentence. Output as a short phrase.
-"""
+    template = """Using the conversation as context, output the intent expressed by the speaker in the conversation. 
+
+EXAMPLE
+Human: Does Nike make running shoes?
+Assistant: The speaker's intent is to inquiring about whether Nike, a specific brand, manufactures running shoes because they are asking about Nike's running shoes.
+
+Output in one sentence as: "The speaker's intent is... because..." """
 
 
 class PersonalityUpdatePrompt(Prompt):

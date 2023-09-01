@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from uuid import uuid4
 
+from langchain.schema import BaseMessage
+
 from ai.personality import default_ai_session_info, default_writing_style
 from common.execute import compile_and_run_prompt
 from common.memory import MemoryType
@@ -22,7 +24,12 @@ from conversation.message import (
     messages_for_chat_model,
     partition_prev_messages,
 )
-from conversation.prompts.chat import AIRespondPrompt, AIThoughtPrompt, MainChatPrompt
+from conversation.prompts.chat import (
+    AIRespondPrompt,
+    AIThoughtPrompt,
+    MainChatPrompt,
+    TakeInitiativePrompt,
+)
 from conversation.prompts.chat_update import (
     AIGoalPrompt,
     AIReflectionPrompt,
@@ -35,6 +42,11 @@ from conversation.prompts.emotion_extraction import (
     TopicSentimentPrompt,
 )
 from conversation.prompts.entity_resolution import ProperNounExtractionPrompt
+from conversation.prompts.intelligence import (
+    SpecificIQPrompt,
+    TopicExtractionPrompt,
+    idea_types,
+)
 from conversation.prompts.memory_creation import IsImportantMemoryPrompt
 from conversation.utils import clean_json_list_output, clean_sentence, format_memories
 from dbs.mongo import MongoMixin, mongo_read, mongo_upsert
@@ -175,10 +187,6 @@ class Session(MetadataMixIn, MongoMixin):
             if entity_name is None:
                 print(f"Couldn't find entity: {name}")
                 entity = Entity.create_new(name, self.user["user_id"])
-                entity_name = EntityName.from_vals(
-                    name, self.user["user_id"], entity.entity_id
-                )
-                entity_name.log_to_mongo()
             else:
                 print(f"Found Entity: {entity_name}")
                 entity = Entity.from_entity_id(entity_name.entity_id)
@@ -241,6 +249,64 @@ class Session(MetadataMixIn, MongoMixin):
             user_message_str += f"{message.content}\n"
         return user_message_str
 
+    def run_intelligence_prompts(
+        self,
+        message_list: List[BaseMessage],
+        entities: List[Entity],
+        intel_vals: List[str],
+    ):
+        """Run intelligence prompts."""
+        topics = compile_and_run_prompt(
+            TopicExtractionPrompt, {}, messages=deepcopy(message_list)
+        )
+        relevant_people = "None"
+        if len(entities) > 0:
+            relevant_people = "\n".join([entity.format() for entity in entities])
+        intelligence_res = compile_and_run_prompt(
+            SpecificIQPrompt,
+            {
+                "message": self.format_recent_user_messages(),
+                "topics": topics,
+                "relevant_people": relevant_people,
+                "idea_types": idea_types,
+            },
+            messages=deepcopy(message_list),
+        )
+        intel_vals.append(intelligence_res)
+
+    def update_friend_need(self, message_list: List[BaseMessage]):
+        friend_sentiment = self.session_user_info.get("sentiment", None)
+        friend_intent = self.session_user_info.get("intent", None)
+        self_name = self.session_info.get("name")
+        prev_need = self.session_user_info.get("need", None)
+        friend_need = compile_and_run_prompt(
+            FriendNeedPrompt,
+            {
+                "self_name": self_name,
+                "sentiment": friend_sentiment,
+                "intent": friend_intent,
+                "previous_need": prev_need,
+            },
+            messages=deepcopy(message_list),
+        )
+        self.session_user_info.update(
+            {
+                "need": friend_need,
+            }
+        )
+
+    def run_initiative(self, message_list: List[BaseMessage], init_list: List[str]):
+        """Run Initiative Building."""
+        self_personality = self.session_info.get("personality")
+        self_name = self.session_info.get("name")
+
+        initiative_res = compile_and_run_prompt(
+            TakeInitiativePrompt,
+            {"self_name": self_name, "personality": self_personality},
+            messages=deepcopy(message_list),
+        )
+        init_list.append(initiative_res)
+
     def run_main_prompt(
         self,
         emotions_list: List[str],
@@ -251,17 +317,16 @@ class Session(MetadataMixIn, MongoMixin):
 
         prev_messages = messages_for_chat_model(self.prev_messages)
         message_list = prev_messages + messages_for_chat_model(self.user_messages)
+        intel_list = []
+        intelligence_thread = threading.Thread(
+            target=self.run_intelligence_prompts,
+            args=[message_list, entities, intel_list],
+        )
+        intelligence_thread.start()
 
         ## General Information about Conversant
-        age = self.user.get("age", 14)
-        name = self.user.get("name", "unknown name")
-        relevant_interests = self.user.get("interests", "unknown")
 
         # Session Specific Information About Conversant
-        personality = self.session_user_info.get("personality")
-        # or positive/negative -> can use sentiment detection here
-        sentiment = self.session_user_info.get("sentiment")
-        current_intent = self.session_user_info.get("intent")
         current_need = self.session_user_info.get("need", None)
 
         ## Information about ai
@@ -271,6 +336,12 @@ class Session(MetadataMixIn, MongoMixin):
         self_sentiment = self.session_info.get("sentiment")
 
         goals = self.session_info.get("goal")
+
+        init_list = []
+        init_thread = threading.Thread(
+            target=self.run_initiative, args=[message_list, init_list]
+        )
+        init_thread.start()
 
         if len(entities) > 0:
             recent_people_info = "\n".join([entity.format() for entity in entities])
@@ -288,6 +359,7 @@ class Session(MetadataMixIn, MongoMixin):
             },
             messages=deepcopy(message_list),
         )
+
         self_respond = compile_and_run_prompt(
             AIRespondPrompt,
             {
@@ -306,25 +378,21 @@ class Session(MetadataMixIn, MongoMixin):
         emotions = ", ".join(emotions_list)
 
         examples = default_writing_style
+        intelligence_thread.join()
 
+        init_thread.join()
         chat_response = compile_and_run_prompt(
             MainChatPrompt,
             {
                 "self_name": self_name,
                 "message": self.format_recent_user_messages(),
                 "emotions": emotions,
-                "recent_people_info": recent_people_info,
-                "relevant_memories": relevant_memories,
+                "specifics": intel_list[0],
                 "thoughts": thought_res,
+                "init_res": init_list[0],
+                "last_message": self.get_last_ai_message(),
                 "planned_response": self_respond,
-                "name": name,
-                "age": age,
                 "self_personality": self_personality,
-                "personality": personality,
-                "sentiment": sentiment,
-                "current_intent": current_intent,
-                "current_need": current_need,
-                "relevant_interests": relevant_interests,
                 "writing_examples": examples,
             },
             messages=deepcopy(message_list),
@@ -348,6 +416,12 @@ class Session(MetadataMixIn, MongoMixin):
         process_memory_thread.start()
         self.last_message_sent = ai_message.created_time
         self.log_to_mongo()
+
+    def get_last_ai_message(self) -> Optional[str]:
+        for message in self.prev_messages[::-1]:
+            if message.role == "ai":
+                return message.content
+        return None
 
     def process_interaction_as_memory(self) -> None:
         last_user_message = self.user_messages[-1]
@@ -378,6 +452,15 @@ class Session(MetadataMixIn, MongoMixin):
         # TODO: check if the memory is important to this specific entity
         for entity in entities:
             print(f"TRIGGERING ENTITY {entity.names[0]} UPDATE")
+
+            # Entity is New, so let's process its name as well
+            if entity.mentions == 1:
+                name = entity.names[0]
+                entity_name = EntityName.from_vals(
+                    name, self.user["user_id"], entity.entity_id
+                )
+                entity_name.log_to_mongo()
+
             entity.trigger_update(last_user_message.content)
             print(f"FINISHED ENTITY {entity.names[0]} UPDATE")
         content_to_save = self.format_recent_user_messages()
@@ -420,57 +503,59 @@ class Session(MetadataMixIn, MongoMixin):
         if len(sentiment_res.split(" ")) > 4:
             sentiment_res = "neutral"
 
-        reflection_res = compile_and_run_prompt(
-            AIReflectionPrompt,
-            {
-                "self_name": self_name,
-                "personality": personality,
-                "sentiment": sentiment_res,
-            },
-            messages=deepcopy(all_messages),
-        )
-        goal_res = compile_and_run_prompt(
-            AIGoalPrompt,
-            {
-                "self_name": self_name,
-                "personality": personality,
-                "sentiment": sentiment_res,
-                "reflection": reflection_res,
-            },
-            messages=deepcopy(all_messages),
-        )
+        # reflection_res = compile_and_run_prompt(
+        #     AIReflectionPrompt,
+        #     {
+        #         "self_name": self_name,
+        #         "personality": personality,
+        #         "sentiment": sentiment_res,
+        #     },
+        #     messages=deepcopy(all_messages),
+        # )
+        # goal_res = compile_and_run_prompt(
+        #     AIGoalPrompt,
+        #     {
+        #         "self_name": self_name,
+        #         "personality": personality,
+        #         "sentiment": sentiment_res,
+        #         "reflection": reflection_res,
+        #     },
+        #     messages=deepcopy(all_messages),
+        # )
 
         self.session_info.update(
             {
                 "sentiment": sentiment_res,
-                "goal": goal_res,
+                # "goal": goal_res,
             }
         )
         self.log_to_mongo()
 
-        friend_need = compile_and_run_prompt(
-            FriendNeedPrompt,
-            {
-                "self_name": self_name,
-                "personality": personality,
-                "sentiment": sentiment_res,
-            },
-            messages=deepcopy(all_messages),
-        )
-        friend_sentiment = compile_and_run_prompt(
-            TopicSentimentPrompt, {}, messages=deepcopy(non_ai_messages)
-        )
-        friend_intent = compile_and_run_prompt(
-            PersonIntentPrompt, {}, messages=deepcopy(non_ai_messages)
-        )
-        self.session_user_info.update(
-            {
-                "sentiment": friend_sentiment,
-                "intent": friend_intent,
-                "need": friend_need,
-            }
-        )
-        self.log_to_mongo()
+        # friend_sentiment = compile_and_run_prompt(
+        #     TopicSentimentPrompt, {}, messages=deepcopy(non_ai_messages)
+        # )
+        # friend_intent = compile_and_run_prompt(
+        #     PersonIntentPrompt, {}, messages=deepcopy(non_ai_messages)
+        # )
+        # prev_need = self.session_user_info.get("need", None)
+        # friend_need = compile_and_run_prompt(
+        #     FriendNeedPrompt,
+        #     {
+        #         "self_name": self_name,
+        #         "sentiment": friend_sentiment,
+        #         "intent": friend_intent,
+        #         "previous_need": prev_need,
+        #     },
+        #     messages=deepcopy(all_messages),
+        # )
+        # self.session_user_info.update(
+        #     {
+        #         "sentiment": friend_sentiment,
+        #         "intent": friend_intent,
+        #         "need": friend_need,
+        #     }
+        # )
+        # self.log_to_mongo()
         return None
 
 
