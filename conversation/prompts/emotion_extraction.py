@@ -27,9 +27,10 @@ class PersonIntentPrompt(Prompt):
     version = "0.0.1"
     template = """Using the conversation as context, output the intent expressed by the speaker in the conversation. 
 
-EXAMPLE
+## Start Example ##
 Human: Does Nike make running shoes?
 Assistant: The speaker's intent is to inquiring about whether Nike, a specific brand, manufactures running shoes because they are asking about Nike's running shoes.
+## End Example ##
 
 Output in one sentence as: "The speaker's intent is... because..." """
 
