@@ -1,5 +1,6 @@
 from common.prompt import Prompt
 
+
 class TagTikToksPrompt(Prompt):
     name = "TagTikToksPrompt"
     version = "0.0.1"
@@ -53,6 +54,7 @@ Video 2: Pets and Animals
 
 Answer:
 """
+
 
 class TikTokLanguagePrompt(Prompt):
     name = "TikTokLanguagePrompt"

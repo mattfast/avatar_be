@@ -4,37 +4,36 @@ from common.prompt import Prompt
 class AISentimentPrompt(Prompt):
     name = "AISentimentPrompt"
     version = "0.0.1"
-    template = """You are {self_name}, an AI texting a friend. Use the context from the last text exchanges to think through your sentiment rowards the topic you are discussing with your friend.
+    template = """You are {self_name}, an AI texting a friend. Use the context from the last text exchanges to think through your sentiment towards conversation with your friend.
 {personality}. 
 
-Stay true to your personality when discussing your sentiment towards the topic. Output your response as a single word feeling.
+Stay true to your personality when choosing your sentiment. Output your response as a single word feeling.
 """
 
 
 class FriendNeedPrompt(Prompt):
     name = "FriendNeedPrompt"
     version = "0.0.1"
-    template = """You are {self_name}, an AI texting a friend. Use the context from the last texts exchanges to think through what your friends needs to hear in this conversation.
-{personality}. 
+    template = """You are {self_name}, an AI texting a friend. Use the context from the texts exchanged to choose the best type of response for your friend in order to continue the conversation.
 
-Your friends current feelings on the topic:
-{sentiment}
+Your friend is currently feeling {sentiment}
+You friend is current intent is: {intent}
 
-Think through what you can offer your friend distinctly with your personality. Format your response in the following way: "Currently, my friend needs me to... and ...".
+Format your response in the following way: "To continue the conversation, the best type of response for my friend is ... because ...". Output one sentence.
 """
 
 
 class AIReflectionPrompt(Prompt):
     name = "AIReflectionPrompt"
     version = "0.0.1"
-    template = """You are an {self_name}, an AI texting a friend. Use the context from the last texts exchanges and your thoughts to engage in a short reflection on your responses with your friend.
+    template = """You are {self_name}, an AI texting a friend. Use the context from the last texts exchanges and your thoughts to engage in a short reflection on your responses with your friend.
     
 Remember, you are:
 {personality}. 
 Your feeling on the topic being discussed:
 {sentiment}.
 
-Stay true to your personality in your reflection. Format your response as a short internal reflection. In hindsight, my response...
+Stay true to your personality in your reflection. Format your response as a short internal reflection: In hindsight, my response...
 """
 
 

@@ -6,10 +6,16 @@ from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from keys import carrier, is_prod, lambda_token, sendblue_signing_secret, checkly_token
+from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
-from tiktok.logic import delete_videos, send_videos, tag_videos, trending_videos, detect_video_languages
 from messaging import send_message
+from tiktok.logic import (
+    delete_videos,
+    detect_video_languages,
+    send_videos,
+    tag_videos,
+    trending_videos,
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -124,6 +130,7 @@ def tag_tiktoks():
 
     return "tiktok job initiated", 202
 
+
 @app.route("/detect-language-tiktoks", methods=["POST"])
 def detect_language_tiktoks():
     lambda_token_header = request.headers.get("lambda-auth-token")
@@ -152,9 +159,9 @@ def send_tiktoks_check():
         asyncio.run(send_videos(is_check=True))
     except Exception as e:
         return f"internal error: {e}", 500
-        
 
     return "tiktok job completed", 200
+
 
 @app.route("/bot-check", methods=["POST"])
 def message_check():
@@ -175,6 +182,7 @@ def message_check():
 
     return "successfully generated", 200
 
+
 @app.route("/sendblue-check", methods=["post"])
 def sendblue_check():
     checkly_token_header = request.headers.get("checkly-token-header")
@@ -189,6 +197,7 @@ def sendblue_check():
         return f"error generating message: {e}", 500
 
     return "successfully generated", 200
+
 
 if __name__ == "__main__":
     app.debug = True
