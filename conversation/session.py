@@ -103,7 +103,6 @@ class Session(MetadataMixIn, MongoMixin):
         last_sent_time = session.get(
             "last_message_sent", datetime.now(tz=timezone.utc)
         ).replace(tzinfo=timezone.utc)
-        print(last_sent_time)
         curr_time = datetime.now(tz=timezone.utc)
         try:
             duration_diff = (curr_time - last_sent_time).seconds
@@ -138,7 +137,6 @@ class Session(MetadataMixIn, MongoMixin):
                     entities=entities,
                 )
             ] + last_messages
-            print(message)
 
         return cls(
             user,
@@ -209,8 +207,6 @@ class Session(MetadataMixIn, MongoMixin):
 
         entity_list = self.extract_and_process_entities(message)
         user_message.add_entities(entity_list)
-        print(user_message)
-        user_message.log_to_mongo()
 
         self.user_messages += [user_message]
 
@@ -458,6 +454,9 @@ class Session(MetadataMixIn, MongoMixin):
 
             entity.trigger_update(last_user_message.content)
             print(f"FINISHED ENTITY {entity.names[0]} UPDATE")
+
+        # After updating entities, update the user message
+        last_user_message.log_to_mongo()
         content_to_save = self.format_recent_user_messages()
 
         # If so, the save it the metadata
