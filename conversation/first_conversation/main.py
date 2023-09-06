@@ -324,7 +324,7 @@ def send_fifth_message(
         .replace("'", "")
         .replace('"', "")
     )
-    response = "Sweet, check out " + rec
+    response = "sweet, check out " + rec
     ai_first_message = Message(response, "ai", session_id, metadata=metadata)
     return [ai_first_message]
 
