@@ -49,7 +49,7 @@ def parse_recommendations(track):
         "name": track["name"]
     }
 
-# currently, type must be an artist or track
+# currently, type must be an artist, track or genre
 def get_recommendation(q, type):
     try:
         access_token = get_access_token()
