@@ -56,9 +56,13 @@ def get_recommendation(q, type):
         if access_token is None:
             return None
         
-        entity_id = get_entity_id(access_token, q, type)
-        if entity_id is None:
-            return None
+        entity_id = ""
+        if type != "genre":
+            entity_id = get_entity_id(access_token, q, type)
+            if entity_id is None:
+                return None
+        else:
+            entity_id = q
 
         type_string = f"seed_{type}s"
         search_params = urllib.parse.urlencode({ type_string: entity_id })
