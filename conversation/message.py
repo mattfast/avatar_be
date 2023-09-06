@@ -23,6 +23,7 @@ class Message(MetadataMixIn, MongoMixin):
         message_id: Optional[str] = None,
         entities: Optional[List[Entity]] = None,
         message_type: Optional[str] = "Plaintext",
+        metadata: Optional[dict] = None,
     ):
         self.content = content
         self.role = role
@@ -32,6 +33,7 @@ class Message(MetadataMixIn, MongoMixin):
         self.message_id = message_id or str(uuid4())
         self.entities = entities or []
         self.message_type = message_type
+        self.metadata = metadata or {}
 
     def to_dict(self) -> dict:
         return {
@@ -43,6 +45,7 @@ class Message(MetadataMixIn, MongoMixin):
             "speaker": self.speaker,
             "entity_ids": [entity.entity_id for entity in self.entities],
             "message_type": self.message_type,
+            "metadata": self.metadata,
         }
 
     @property

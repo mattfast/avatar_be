@@ -1,7 +1,7 @@
 import threading
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from uuid import uuid4
 
 from langchain.schema import BaseMessage
@@ -18,6 +18,7 @@ from common.metadata import (
     Metadata,
     MetadataMixIn,
 )
+from conversation.first_conversation.main import FIRST_CONVO_STEP_MAP
 from conversation.message import (
     Message,
     message_list_to_convo_prompt,
@@ -30,17 +31,8 @@ from conversation.prompts.chat import (
     MainChatPrompt,
     TakeInitiativePrompt,
 )
-from conversation.prompts.chat_update import (
-    AIGoalPrompt,
-    AIReflectionPrompt,
-    AISentimentPrompt,
-    FriendNeedPrompt,
-)
-from conversation.prompts.emotion_extraction import (
-    EmotionExtractionPrompt,
-    PersonIntentPrompt,
-    TopicSentimentPrompt,
-)
+from conversation.prompts.chat_update import AISentimentPrompt
+from conversation.prompts.emotion_extraction import EmotionExtractionPrompt
 from conversation.prompts.entity_resolution import ProperNounExtractionPrompt
 from conversation.prompts.intelligence import (
     SpecificIQPrompt,
@@ -66,6 +58,7 @@ class Session(MetadataMixIn, MongoMixin):
     def __init__(
         self,
         user,
+        is_first_conversation: bool = True,
         session_id: Optional[str] = None,
         messages: Optional[List[Message]] = None,
         session_info: Optional[dict] = None,
@@ -73,6 +66,7 @@ class Session(MetadataMixIn, MongoMixin):
         last_message_sent: Optional[datetime] = None,
     ):
         self.user = user
+        self.is_first_conversation = is_first_conversation
         self.session_id = session_id or str(uuid4())
         self.prev_messages, self.user_messages = partition_prev_messages(messages)
         self.session_info = session_info or default_ai_session_info
@@ -94,11 +88,11 @@ class Session(MetadataMixIn, MongoMixin):
         session_id = user.get("session_id", None)
 
         if session_id is None:
-            return Session(user)
+            return Session(user, is_first_conversation=True)
         session = mongo_read("Session", {"session_id": session_id})
 
         if session is None:
-            return Session(user)
+            return Session(user, is_first_conversation=True)
 
         last_sent_time = session.get(
             "last_message_sent", datetime.now(tz=timezone.utc)
@@ -109,6 +103,7 @@ class Session(MetadataMixIn, MongoMixin):
         except:
             duration_diff = 0
 
+        # The new session is not the first conversation
         if duration_diff >= 18000:
             return Session(user)
 
@@ -135,11 +130,23 @@ class Session(MetadataMixIn, MongoMixin):
                     user_name,
                     message_id=message["message_id"],
                     entities=entities,
+                    metadata=message.get("metadata", []),
                 )
             ] + last_messages
 
+        # If the last message sent was still part of the "first conversation", then we
+        # are still in the first conversation
+        is_first_conversation = len(last_messages) == 0 or last_messages[
+            -1
+        ].metadata.get("is_first_conversation", False)
+        print("REACHED OAINSDOIASNDOIN")
+        print(is_first_conversation)
+        for message in last_messages:
+            print(message.content)
+            print(message.role)
         return cls(
             user,
+            is_first_conversation,
             session_id,
             last_messages,
             session_info,
@@ -194,10 +201,34 @@ class Session(MetadataMixIn, MongoMixin):
 
         return entity_list
 
-    def process_next_message(self, message: str) -> Message:
+    def continue_first_conversation(self, user_message: Message) -> List[Message]:
+        """Continue first conversation."""
+        # Find the place in the conversation
+        ai_message = self.get_last_ai_message()
+        curr_step = 1 if ai_message is None else ai_message.metadata.get("step", -1) + 1
+        print("CURR STEP")
+        print(curr_step)
+        func = FIRST_CONVO_STEP_MAP.get(curr_step, None)
+        if func is None:
+            return [Message("FIRST CONVO FINISHED", "ai", self.session_id, metadata={})]
+        return func(
+            self.session_id, self.prev_messages, self.user_messages, user_message
+        )
+
+    def process_next_message(self, message: str) -> List[Message]:
         message = clean_sentence(message)
-        user_message = Message(message, "human", self.session_id)
+        user_message = Message(
+            message,
+            "human",
+            self.session_id,
+            metadata={"is_first_conversation": self.is_first_conversation},
+        )
         user_message.log_to_mongo()
+
+        if self.is_first_conversation:
+            messages_to_ret = self.continue_first_conversation(user_message)
+            self.user_messages += [user_message]
+            return messages_to_ret
 
         emotions_list = []
         emotions_thread = threading.Thread(
@@ -270,27 +301,6 @@ class Session(MetadataMixIn, MongoMixin):
         )
         intel_vals.append(intelligence_res)
 
-    def update_friend_need(self, message_list: List[BaseMessage]):
-        friend_sentiment = self.session_user_info.get("sentiment", None)
-        friend_intent = self.session_user_info.get("intent", None)
-        self_name = self.session_info.get("name")
-        prev_need = self.session_user_info.get("need", None)
-        friend_need = compile_and_run_prompt(
-            FriendNeedPrompt,
-            {
-                "self_name": self_name,
-                "sentiment": friend_sentiment,
-                "intent": friend_intent,
-                "previous_need": prev_need,
-            },
-            messages=deepcopy(message_list),
-        )
-        self.session_user_info.update(
-            {
-                "need": friend_need,
-            }
-        )
-
     def run_initiative(self, message_list: List[BaseMessage], init_list: List[str]):
         """Run Initiative Building."""
         self_personality = self.session_info.get("personality")
@@ -306,7 +316,7 @@ class Session(MetadataMixIn, MongoMixin):
     def run_main_prompt(
         self,
         emotions_list: List[str],
-    ):
+    ) -> List[Message]:
         # TODO: Update with all entities mentioned in the past 3-5 messages
         # Build an LRU cache
         entities = self.user_messages[-1].entities
@@ -372,6 +382,11 @@ class Session(MetadataMixIn, MongoMixin):
         intelligence_thread.join()
 
         init_thread.join()
+        last_message = self.get_last_ai_message()
+        if last_message is None:
+            last_sent = None
+        else:
+            last_sent = last_message.content
         chat_response = compile_and_run_prompt(
             MainChatPrompt,
             {
@@ -381,7 +396,7 @@ class Session(MetadataMixIn, MongoMixin):
                 "specifics": intel_list[0],
                 "thoughts": thought_res,
                 "init_res": init_list[0],
-                "last_message": self.get_last_ai_message(),
+                "last_message": last_sent,
                 "planned_response": self_respond,
                 "self_personality": self_personality,
                 "writing_examples": examples,
@@ -391,27 +406,34 @@ class Session(MetadataMixIn, MongoMixin):
         print(chat_response)
 
         ai_message = Message(chat_response, "ai", self.session_id)
-        return ai_message
+        return [ai_message]
 
-    def update_on_send(self, ai_message: Message):
-        ai_message.log_to_mongo()
-        update_thread = threading.Thread(
-            target=self.async_update_chat_info,
-            args=[ai_message],
-        )
-        update_thread.start()
+    def update_on_send(self, ai_messages: List[Message]):
+        # TODO: Change this functionality ASAP.
+        # TODO: Only sending one message rn, so doesn't matter. But should
+        for message in ai_messages:
+            message.log_to_mongo()
+        last_message = ai_messages[-1]
+        if not self.is_first_conversation:
+            update_thread = threading.Thread(
+                target=self.async_update_chat_info,
+                args=[last_message],
+            )
+            update_thread.start()
 
-        process_memory_thread = threading.Thread(
-            target=self.process_interaction_as_memory,
-        )
-        process_memory_thread.start()
-        self.last_message_sent = ai_message.created_time
+            process_memory_thread = threading.Thread(
+                target=self.process_interaction_as_memory,
+            )
+            process_memory_thread.start()
+        self.last_message_sent = last_message.created_time
         self.log_to_mongo()
 
-    def get_last_ai_message(self) -> Optional[str]:
+    def get_last_ai_message(self) -> Optional[Message]:
+        print("GETTING LAST AI MESSAGE")
         for message in self.prev_messages[::-1]:
             if message.role == "ai":
-                return message.content
+                return message
+        print("RETURNING NONE")
         return None
 
     def process_interaction_as_memory(self) -> None:
