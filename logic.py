@@ -76,10 +76,6 @@ def talk(user, new_message, is_check=False, send_ws=False):
             if send_ws:
                 messages.append(next_message.content)
                 next_message.log_to_mongo()
-                #print("ABOUT TO EMIT")
-                #socket.emit('message', { 'msg': next_message.content }, room=user["sid"])
-                #print("EMITTED")
-                #print(socket)
             else:
                 next_message.send(user["number"])
                 time.sleep(0.5)

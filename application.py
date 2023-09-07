@@ -46,15 +46,12 @@ def handle_message(data):
         print("ERROR CREATING OR FINDING USER")
         return
     
-    print("NEW USER")
-    print(user)
-    
     #t = threading.Thread(target=talk, args=(user, data["msg"]), kwargs={ 'send_ws': True, 'socket': socketio })
     #t.start()
     messages = talk(user, data["msg"], send_ws=True)
     for message in messages:
+        time.sleep(message.length * 0.03)
         emit('message', { 'msg': message }, room=data["sid"])
-        time.sleep(0.5)
 
 @app.route("/", methods=["GET"])
 def health_check():
