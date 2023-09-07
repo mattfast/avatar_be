@@ -1,5 +1,7 @@
 import asyncio
 import threading
+import time
+#import uuid
 
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -23,21 +25,40 @@ CORS(app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins=['http://localhost:3000'], async_mode='threading', transports=['websocket'])
 
-@socketio.on('connect', namespace="/echo")
-def test_connect():
-    print("HERE")
+@socketio.on('connect', namespace="/chat")
+def connect():
     print("CONNECTED")
-    emit('connection', {'data': 'connected!'})
+    print("ROOM")
+    print(request.sid)
+    emit('connection', { 'sid': request.sid }, room=request.sid)
 
-@socketio.on('message', namespace="/echo")
+@socketio.on('message', namespace="/chat")
 def handle_message(data):
-    print('received message: ' + data)
-    emit('message', { 'data': data })
+    print('received message: ')
+    print(data)
+
+    if data is None or data["sid"] is None or data["msg"] is None or data["sid"] == "" or data["msg"] == "":
+        print("DATA NOT FORMATTED CORRECTLY")
+        return
+
+    user, is_first = login(data["sid"], is_sid=True)
+    if user is None:
+        print("ERROR CREATING OR FINDING USER")
+        return
+    
+    print("NEW USER")
+    print(user)
+    
+    #t = threading.Thread(target=talk, args=(user, data["msg"]), kwargs={ 'send_ws': True, 'socket': socketio })
+    #t.start()
+    messages = talk(user, data["msg"], send_ws=True)
+    for message in messages:
+        emit('message', { 'msg': message }, room=data["sid"])
+        time.sleep(0.5)
 
 @app.route("/", methods=["GET"])
 def health_check():
     return "healthy!"
-
 
 @app.route("/bot", methods=["POST"])
 def message():
