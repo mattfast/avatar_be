@@ -3,6 +3,7 @@ import threading
 
 from flask import Flask, Response, request
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
@@ -19,7 +20,19 @@ from tiktok.logic import (
 
 app = Flask(__name__)
 CORS(app)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, cors_allowed_origins=['http://localhost:3000'], async_mode='threading', transports=['websocket'])
 
+@socketio.on('connect', namespace="/echo")
+def test_connect():
+    print("HERE")
+    print("CONNECTED")
+    emit('connection', {'data': 'connected!'})
+
+@socketio.on('message', namespace="/echo")
+def handle_message(data):
+    print('received message: ' + data)
+    emit('message', { 'data': data })
 
 @app.route("/", methods=["GET"])
 def health_check():
@@ -206,6 +219,6 @@ if __name__ == "__main__":
             "/etc/letsencrypt/live/milk-be.com/fullchain.pem",
             "/etc/letsencrypt/live/milk-be.com/privkey.pem",
         )
-        app.run(host="0.0.0.0", port=8080, ssl_context=context)
+        socketio.run(app, host="0.0.0.0", port=8080, ssl_context=context, allow_unsafe_werkzeug=True)
     else:
-        app.run(host="0.0.0.0", port=8080)
+        socketio.run(app, host="0.0.0.0", port=8080, allow_unsafe_werkzeug=True)
