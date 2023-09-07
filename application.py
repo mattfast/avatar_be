@@ -3,6 +3,7 @@ import threading
 
 from flask import Flask, Response, request
 from flask_cors import CORS
+from flask_sock import Sock
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
@@ -19,7 +20,15 @@ from tiktok.logic import (
 
 app = Flask(__name__)
 CORS(app)
+sock = Sock(app)
 
+@sock.route("/echo")
+def echo(ws):
+    while True:
+        print("HERE")
+        data = ws.receive()
+        print(data)
+        ws.send(data)
 
 @app.route("/", methods=["GET"])
 def health_check():
