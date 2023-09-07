@@ -50,7 +50,7 @@ def handle_message(data):
     #t.start()
     messages = talk(user, data["msg"], send_ws=True)
     for message in messages:
-        time.sleep(message.length * 0.03)
+        time.sleep(len(message) * 0.03)
         emit('message', { 'msg': message }, room=data["sid"])
 
 @app.route("/", methods=["GET"])
