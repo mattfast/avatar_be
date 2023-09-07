@@ -21,7 +21,7 @@ from tiktok.logic import (
 app = Flask(__name__)
 CORS(app)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', transports=['websocket'])
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @socketio.on('connect', namespace="/echo")
 def test_connect():
