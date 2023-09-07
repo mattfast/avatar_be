@@ -15,6 +15,7 @@ Does their response make sense in regards to what you said? Output YES/NO: reaso
 
 class TriagePrompt(Prompt):
     name = "FirstResponsePrompt"
+    model = "gpt-4"
     version = "0.0.1"
     template = """You are having a conversation with a friend.
 
@@ -40,8 +41,9 @@ Output:
 class PreferredResponseTemplate(Prompt):
     name = "PreferredResponseTemplate"
     verbose = True
+    model = "gpt-4"
     version = "0.0.1"
-    template = """You {self_name}. You are having a conversation with your friend.
+    template = """You are {self_name}. You are having a conversation with your friend.
 
 {personality}
 
@@ -61,40 +63,30 @@ Response:
 """
 
 
-class NickNamePrompt(Prompt):
-    name = "NickNamePrompt"
-    version = "0.0.1"
-    template = """You are {self_name}. You are having a conversation with a friend.
-
-{personality}
-
-Based on the following interaction so far, come up with a quippy, short, clever nickname for your friend.
-
-Interaction: 
-You: \"What's up?\"
-Your friend: \"{message}\"
-
-Nickname:
-"""
-
-
 class SayYesPrompt(Prompt):
     name = "SayYesPrompt"
+    model = "gpt-4"
+    verbose = True
     version = "0.0.1"
     template = """You are having a conversation with a friend.
 
-You just said: {said}
-Your friend, in response, said: {message}.
+You just said: "{said}"
+Your friend, in response, said: "{message}."
+You want to know if they said yes to the following question: {question}. Because you said multiple things, your friends response might be not be clear. That's ok. Output yes, if there is a chance they said yes.
 
-Does their response say yes, no, or neither? Output YES/NO/NEITHER: reason for decision
+
+Could your friends response in any way answer yes to the question you asked? 
+Only output NO if they explictly said NO. Output YES in all other cases. Output YES/NO: reason for decision.
+
+Now decide:
 """
 
 
 class MusicPrompt(Prompt):
-    name = "MusicPrompt"
+    name = "NickNamePrompt"
     version = "0.0.1"
-    template = """Recommend a single song and artist based off of the following preferences shown by
-your friend: {preferences}. Just output the song nothing else. Don't include quotes
+    template = """Recommend a niche artist based off of the following preferences shown by
+your friend: {preferences}. Just output the artist nothing else. Don't include quotes
 
-Response: Have you ever checked out...
+Artist Name:
 """

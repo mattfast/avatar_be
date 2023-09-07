@@ -7,7 +7,6 @@ from common.execute import compile_and_run_prompt
 from conversation.first_conversation.prompts.responses import (
     AskingAboutMePrompt,
     MusicPrompt,
-    NickNamePrompt,
     PreferredResponseTemplate,
     RespondedPrompt,
     SayYesPrompt,
@@ -15,6 +14,7 @@ from conversation.first_conversation.prompts.responses import (
 )
 from conversation.message import Message, message_list_to_convo_prompt
 from dbs.mongo import mongo_read
+from spotify.logic import get_recommendation
 
 NUM_FIRST_CONVO_STEPS = 6
 
@@ -24,7 +24,7 @@ NUM_FIRST_CONVO_STEPS = 6
 def triage_prompt(triage_list: List, user_messages: List[Message]):
     triage = compile_and_run_prompt(
         TriagePrompt,
-        {"message": "\n".join([message.content for message in user_messages])},
+        {"message": ". ".join([message.content for message in user_messages])},
     ).lower()
     if "positive" in triage:
         triage_list.append("positive")
@@ -41,7 +41,7 @@ def did_respond_prompt(
         RespondedPrompt,
         {
             "said": query_str,
-            "message": "\n".join([message.content for message in user_messages]),
+            "message": ". ".join([message.content for message in user_messages]),
         },
     ).lower()
     if "yes" in did_respond:
@@ -53,7 +53,7 @@ def did_respond_prompt(
 def asking_about_me(about_me_list: List, user_messages: List[Message]):
     about_me = compile_and_run_prompt(
         AskingAboutMePrompt,
-        {"message": "\n".join([message.content for message in user_messages])},
+        {"message": ". ".join([message.content for message in user_messages])},
     ).lower()
     if "yes" in about_me:
         about_me_list.append("yes")
@@ -61,28 +61,18 @@ def asking_about_me(about_me_list: List, user_messages: List[Message]):
         about_me_list.append("no")
 
 
-def run_nickname_prompt(nickname_list: List, user_messages: List[Message]):
-    nickname_guidance = "a short, slightly sarcastic nickname that ambiguously makes the person feel better"
-    nickname = compile_and_run_prompt(
-        NickNamePrompt,
-        {
-            "personality": default_personality,
-            "extra_guidance": nickname_guidance,
-            "self_name": "Justin",
-            "message": "\n".join([message.content for message in user_messages]),
-        },
-    ).lower()
-    nickname_list.append(nickname)
-
-
-def said_yes(yes_list: List, just_said: str, user_messages: List[Message]):
+def said_yes(
+    yes_list: List, just_said: str, user_messages: List[Message], question: str
+):
     said_yes = compile_and_run_prompt(
         SayYesPrompt,
         {
             "said": just_said,
-            "message": "\n".join([message.content for message in user_messages]),
+            "message": ". ".join([message.content for message in user_messages]),
+            "question": question,
         },
     ).lower()
+    print(said_yes)
     if "yes" in said_yes:
         yes_list.append(True)
     else:
@@ -100,24 +90,99 @@ def send_first_message(
     curr_message,
 ) -> List[Message]:
     metadata = {"step": 1, "is_first_conversation": True}
-    first_message = Message("hey", "ai", session_id, metadata=metadata)
+    first_message = Message("hey!", "ai", session_id, metadata=metadata)
     second_message = Message(
-        "what's up? any good plans today?", "ai", session_id, metadata=metadata
+        "i'm your high school's ai", "ai", session_id, metadata=metadata
     )
-    return [first_message, second_message]
+    third_message = Message("you go to lex right?", "ai", session_id, metadata=metadata)
+    return [first_message, second_message, third_message]
 
 
 def send_second_message(
     session_id: str,
     prev_messages: List[Message],
     user_messages: List[Message],
-    curr_message: Message,
+    curr_message,
 ) -> List[Message]:
     metadata = {"step": 2, "is_first_conversation": True}
-    extra_guidance = """## If the message is about homework just say: "rip"
+    all_user_messages = user_messages + [curr_message]
+
+    just_said = "you go to lex, right?"
+    said_yes = compile_and_run_prompt(
+        SayYesPrompt,
+        {
+            "said": just_said,
+            "message": ". ".join([message.content for message in all_user_messages]),
+            "question": just_said,
+        },
+    ).lower()
+    if "yes" in said_yes:
+        first_message = Message(
+            "sweet, lucky guess ig", "ai", session_id, metadata=metadata
+        )
+        second_message = Message(
+            "jk, i'm only for lex students rn", "ai", session_id, metadata=metadata
+        )
+        third_message = None
+    else:
+        first_message = Message(
+            "damn. my bad lmao", "ai", session_id, metadata=metadata
+        )
+        second_message = Message(
+            "i'm only for lex students rn", "ai", session_id, metadata=metadata
+        )
+        third_message = Message(
+            "you can still try me out though", "ai", session_id, metadata=metadata
+        )
+
+    starting_arr = [first_message, second_message]
+    if third_message is not None:
+        starting_arr = starting_arr + [third_message]
+    final_message = Message(
+        "anyways, what's your name?", "ai", session_id, metadata=metadata
+    )
+    starting_arr += [final_message]
+    return starting_arr
+
+
+def send_third_message(
+    session_id: str,
+    prev_messages: List[Message],
+    user_messages: List[Message],
+    curr_message: Message,
+) -> List[Message]:
+    metadata = {"step": 3, "is_first_conversation": True}
+    first_message = Message("great to meet you!", "ai", session_id, metadata=metadata)
+    second_message = Message(
+        "any good plans today?", "ai", session_id, metadata=metadata
+    )
+    return [first_message, second_message]
+
+
+# Affirm that they knew it, didn't know went to a school + ask about dogs + cats
+def send_fourth_message(
+    session_id: str,
+    prev_messages: List[Message],
+    user_messages: List[Message],
+    curr_message,
+) -> List[Message]:
+    metadata = {"step": 4, "is_first_conversation": True}
+    extra_guidance = """## If the message is only about homework just say: "rip, which subjects?"
+    ## If the message mentions a specific sport, say something, like: "how long have you played [specific sport]?",
+    ## If the message is about any other sort of extracurricular (like theater), ask a specific, short question about that extracurricular
+    ## if the message mentions hanging out with someone: if a specific activity is mentioned: ask a specific, short question about their activity, otherwise ask what they are doing
+    ## if the message mentions going to a specific class: ask if they like they like [[specific class]], otherwise if them message doesn't mention the subject, ask which class they are going to
     """
-    negative_neutral_temp = "playful, sarcastic quip that makes fun of their situation in an uplifting way. no more than 6 words."
-    pos_template = "playful, slightly sarcastic, earnest quip that makes your friends feel good. no more than 6 words."
+    template = "short, compassionate, interested question. do not rhyme. do not name or refer to your friend at all. only say one thing. no more than 6 words."
+
+    personal_experience_guidance = """## If the message is only about homework just say: "if it's [[choose random high school subject]], good luck"
+    ## If the message mentions a specific sport, say something, like: "idk how you do that. i could never have the [[one skill required to  play sport]]",
+    ## If the message is about any other sort of extracurricular, leave a short comment on how fun their extracurricular is, eg. "sounds fun" DO NOT LEAD WITH A QUESTION
+    ## if the message mentions hanging out with someone: leave a short comment on how you wish you could join them
+    ## if the message mentions going to class: i always loved [[insert name of high school subject here]]
+    """
+    personal_experience_temp = "short, nice, interesting compliment. do not rhyme. DO NOT LEAD WITH A question. just say something. do not name or refer to your friend at all. only say one thing. DO NOT START WITH A QUESTION. no more than 8 words."
+
     res_messages_str = "\n".join(
         [message.content for message in (user_messages + [curr_message])]
     )
@@ -126,147 +191,120 @@ def send_second_message(
     all_user_messages = user_messages + [curr_message]
     responded_list = []
     about_me_list = []
-    triage_list = []
     respond_thread = threading.Thread(
         target=did_respond_prompt,
-        args=[responded_list, "what's up? any good plans today?", all_user_messages],
+        args=[
+            responded_list,
+            "great to meet you! any good plans today?",
+            all_user_messages,
+        ],
     )
     about_me_thread = threading.Thread(
         target=asking_about_me, args=[about_me_list, all_user_messages]
     )
-    triage_thread = threading.Thread(
-        target=triage_prompt, args=[triage_list, all_user_messages]
-    )
 
     respond_thread.start()
     about_me_thread.start()
-    triage_thread.start()
 
     respond_thread.join()
     about_me_thread.join()
-    triage_thread.join()
 
     about_me_message = Message(
         "tbh i don't have much going on", "ai", session_id, metadata=metadata
     )
 
     if responded_list[0] == "yes":
-        triage_val = triage_list[0]
-        if triage_val == "positive":
-            # only run replace if original does not have exclamation points
-            primary_res_content = (
-                compile_and_run_prompt(
-                    PreferredResponseTemplate,
-                    {
-                        "self_name": "Justin",
-                        "personality": default_personality,
-                        "template": pos_template,
-                        "extra_guidance": extra_guidance,
-                        "message": res_messages_str,
-                    },
-                    messages=[last_ai_message_to_respond],
-                )
-                .lower()
-                .replace("!", ".")
+        # only run replace if original does not have exclamation points
+        primary_res_content = (
+            compile_and_run_prompt(
+                PreferredResponseTemplate,
+                {
+                    "self_name": "Justin",
+                    "personality": default_personality,
+                    "template": template,
+                    "extra_guidance": extra_guidance,
+                    "message": res_messages_str,
+                },
+                messages=[last_ai_message_to_respond]
+                + [message.as_langchain_message() for message in all_user_messages],
             )
-            secondary_res_content = None
-        else:
-            nickname_list = []
-            nickname_thread = threading.Thread(
-                target=run_nickname_prompt, args=[nickname_list, all_user_messages]
+            .lower()
+            .replace("!", ".")
+        )
+
+        # only run replace if original does not have exclamation points
+        secondary_res = (
+            compile_and_run_prompt(
+                PreferredResponseTemplate,
+                {
+                    "self_name": "Justin",
+                    "personality": default_personality,
+                    "template": personal_experience_temp,
+                    "extra_guidance": personal_experience_guidance,
+                    "message": res_messages_str,
+                },
+                messages=[last_ai_message_to_respond]
+                + [message.as_langchain_message() for message in all_user_messages],
             )
-            nickname_thread.start()
-            primary_res_content = (
-                compile_and_run_prompt(
-                    PreferredResponseTemplate,
-                    {
-                        "self_name": "Justin",
-                        "personality": default_personality,
-                        "template": negative_neutral_temp,
-                        "extra_guidance": extra_guidance,
-                        "message": res_messages_str,
-                    },
-                    messages=[last_ai_message_to_respond],
-                )
-                .lower()
-                .replace("!", ".")
-            )
-            nickname_thread.join()
-            secondary_res_content = Message(
-                f"i'm going to call you {nickname_list[0]} lol",
-                "ai",
-                session_id,
-                metadata=metadata,
-            )
+            .lower()
+            .replace("!", ".")
+        )
 
         primary_res_message = Message(
             primary_res_content, "ai", session_id, metadata=metadata
         )
-        final_message = Message(
-            "you go to lex right?", "ai", session_id, metadata=metadata
+        secondary_res_message = Message(
+            secondary_res, "ai", session_id, metadata=metadata
         )
-        return_arr = [primary_res_message]
-        if secondary_res_content is not None:
-            return_arr = return_arr + [secondary_res_content]
-        return_arr = return_arr + [final_message]
+        return_arr = [primary_res_message, secondary_res_message]
         if about_me_list[0] == "yes":
             return_arr = [about_me_message] + return_arr
-        return return_arr
-    else:
-        return []
-
-
-# Affirm that they knew it, didn't know went to a school + ask about dogs + cats
-def send_third_message(
-    session_id: str,
-    prev_messages: List[Message],
-    user_messages: List[Message],
-    curr_message,
-) -> List[Message]:
-    metadata = {"step": 3, "is_first_conversation": True}
-    all_user_messages = user_messages + [curr_message]
-
-    just_said = "you go to lex, right?"
-    said_yes = compile_and_run_prompt(
-        SayYesPrompt,
-        {
-            "said": just_said,
-            "message": "\n".join([message.content for message in all_user_messages]),
-        },
-    ).lower()
-    if "yes" in said_yes:
-        first_message = Message(
-            "sweet, lucky guess ig", "ai", session_id, metadata=metadata
+        final_message = Message(
+            "anyways, are u a dog or a cat person?", "ai", session_id, metadata=metadata
         )
-    else:
-        first_message = Message(
-            "damn. promise i'm not creeping lmao", "ai", session_id, metadata=metadata
-        )
-    final_message = Message(
-        "anyways, do you like dogs or cats?", "ai", session_id, metadata=metadata
-    )
-    return [first_message, final_message]
+        return return_arr + [final_message]
+    return []
 
 
 # Send tiktoks + music rec question
-def send_fourth_message(
+def send_fifth_message(
     session_id: str,
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
 ) -> List[Message]:
-    metadata = {"step": 4, "is_first_conversation": True}
+    metadata = {"step": 5, "is_first_conversation": True}
     say_yes_list = []
     all_user_messages = user_messages + [curr_message]
-    res_messages_str = "\n".join(
+
+    break_id = 0
+    for i in range(len(prev_messages) - 1, -1, -1):
+        if prev_messages[i].role == "ai" and prev_messages[i - 1].role != "ai":
+            break_id = i
+            break
+
+    ai_initiations = ". ".join(
+        [message.content for message in prev_messages[break_id:]]
+    )
+    print(ai_initiations)
+    res_messages_str = ". ".join(
         [message.content for message in (user_messages + [curr_message])]
     )
-    said_yes(say_yes_list, "anyways, do you like dogs or cats?", all_user_messages)
-    last_ai_message_to_respond = prev_messages[-1].as_langchain_message()
+    said_yes(
+        say_yes_list,
+        ai_initiations,
+        all_user_messages,
+        "anyways, do you like dogs or cats?",
+    )
+
+    last_messages_to_respond = [
+        message.as_langchain_message()
+        for message in prev_messages[break_id:] + all_user_messages
+    ]
     if say_yes_list[0]:
-        first_message = Message("nice, same", "ai", session_id, metadata=metadata)
+        first_message = Message("same haha", "ai", session_id, metadata=metadata)
     else:
-        response_template = 'short, clever response that pokes fun at their dislike. phrased as "guess [fill in response]" no longer than 8 words.'
+        response_template = 'short, funny response about their dislike of dogs and cats. phrased as "guess you\'re more of a [fill in response]" no longer than 6 words.'
         funny_res = (
             compile_and_run_prompt(
                 PreferredResponseTemplate,
@@ -277,14 +315,12 @@ def send_fourth_message(
                     "extra_guidance": "",
                     "message": res_messages_str,
                 },
-                messages=[last_ai_message_to_respond],
+                messages=last_messages_to_respond,
             )
             .lower()
             .replace("!", ".")
         )
-        first_message = Message(
-            f"bummer. {funny_res}", "ai", session_id, metadata=metadata
-        )
+        first_message = Message(funny_res, "ai", session_id, metadata=metadata)
 
     tiktoks = list(mongo_read("TikToks", {"tags": "Pets and Animals"}, find_many=True))
     tiktok = random.choice(tiktoks)
@@ -292,7 +328,7 @@ def send_fourth_message(
     videoId = tiktok["videoId"]
     url = f"https://www.tiktok.com/@{author}/video/{videoId}"
 
-    preface = "let me know what you think of this tiktok"
+    preface = "found this tiktok lmk what you think"
 
     ai_tiktok_preface = Message(preface, "ai", session_id, metadata=metadata)
     ai_tiktok_url = Message(
@@ -305,18 +341,18 @@ def send_fourth_message(
 
 
 # Send out music rec
-def send_fifth_message(
+def send_sixth_message(
     session_id: str,
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
 ) -> List[Message]:
-    metadata = {"step": 5, "is_first_conversation": False}
+    metadata = {"step": 6, "is_first_conversation": False}
     rec = (
         compile_and_run_prompt(
             MusicPrompt,
             {
-                "preferences": "\n".join(
+                "preferences": ". ".join(
                     [message.content for message in user_messages + [curr_message]]
                 )
             },
@@ -324,9 +360,15 @@ def send_fifth_message(
         .replace("'", "")
         .replace('"', "")
     )
-    response = "sweet, check out " + rec
+    print(rec)
+    song_recs = get_recommendation(rec, "artist")
+    song = song_recs[0]
+    print(song)
+    first_message = Message("actually same", "ai", session_id, metadata=metadata)
+    response = f"check out {song['name'].lower()} by {song['artist_names'][0].lower()}. lmk what you think"
     ai_first_message = Message(response, "ai", session_id, metadata=metadata)
-    return [ai_first_message]
+    ai_url_message = Message(song["spotify_url"], "ai", session_id, metadata=metadata)
+    return [first_message, ai_first_message, ai_url_message]
 
 
 ########### FOR SENDING MESSAGES ###########
@@ -338,4 +380,5 @@ FIRST_CONVO_STEP_MAP = {
     3: send_third_message,
     4: send_fourth_message,
     5: send_fifth_message,
+    6: send_sixth_message,
 }

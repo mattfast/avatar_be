@@ -1,4 +1,5 @@
 import threading
+import time
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -411,9 +412,9 @@ class Session(MetadataMixIn, MongoMixin):
     def update_on_send(self, ai_messages: List[Message]):
         # TODO: Change this functionality ASAP.
         # TODO: Only sending one message rn, so doesn't matter. But should
-        for message in ai_messages:
-            message.log_to_mongo()
         last_message = ai_messages[-1]
+        print("LAST MESSAGE")
+        print(last_message.content)
         if not self.is_first_conversation:
             update_thread = threading.Thread(
                 target=self.async_update_chat_info,

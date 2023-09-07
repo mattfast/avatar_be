@@ -49,19 +49,23 @@ def parse_recommendations(track):
         "album_name": track["album"]["name"],
         "artist_names": list(map(lambda y: y["name"], track["artists"])),
         "name": track["name"],
+        "spotify_url": track["external_urls"]["spotify"],
     }
 
 
-# currently, type must be an artist or track
+# currently, type must be an artist or track, genre
 def get_recommendation(q, type):
     try:
         access_token = get_access_token()
         if access_token is None:
             return None
 
-        entity_id = get_entity_id(access_token, q, type)
-        if entity_id is None:
-            return None
+        if type != "genre":
+            entity_id = get_entity_id(access_token, q, type)
+            if entity_id is None:
+                return None
+        else:
+            entity_id = q
 
         type_string = f"seed_{type}s"
         search_params = urllib.parse.urlencode({type_string: entity_id})
@@ -73,7 +77,7 @@ def get_recommendation(q, type):
 
         r_json = r.json()
         tracks = r_json["tracks"]
-        print(tracks)
+        print(tracks[0])
         top_recs = list(map(parse_recommendations, tracks[:3]))
 
         return top_recs

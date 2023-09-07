@@ -7,7 +7,6 @@ from sendblue import Sendblue
 
 from conversation.session import Session
 from dbs.mongo import mongo_read, mongo_upsert
-from messaging import send_message
 
 MAX_WAIT_TIME_SECS = 5
 
@@ -64,5 +63,6 @@ def talk(user, new_message, is_check=False):
         and not is_check
     ):
         for next_message in next_messages:
-            send_message(next_message.content, user["number"])
+            next_message.send(user["number"])
+            time.sleep(0.5)
         curr_session.update_on_send(next_messages)
