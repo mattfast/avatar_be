@@ -140,11 +140,6 @@ class Session(MetadataMixIn, MongoMixin):
         is_first_conversation = len(last_messages) == 0 or last_messages[
             -1
         ].metadata.get("is_first_conversation", False)
-        print("REACHED OAINSDOIASNDOIN")
-        print(is_first_conversation)
-        for message in last_messages:
-            print(message.content)
-            print(message.role)
         return cls(
             user,
             is_first_conversation,
