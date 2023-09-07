@@ -219,6 +219,6 @@ if __name__ == "__main__":
             "/etc/letsencrypt/live/milk-be.com/fullchain.pem",
             "/etc/letsencrypt/live/milk-be.com/privkey.pem",
         )
-        socketio.run(app, host="0.0.0.0", port=8080, ssl_context=context)
+        socketio.run(app, host="0.0.0.0", port=8080, ssl_context=context, allow_unsafe_werkzeug=True)
     else:
-        socketio.run(app, host="0.0.0.0", port=8080)
+        socketio.run(app, host="0.0.0.0", port=8080, allow_unsafe_werkzeug=True)
