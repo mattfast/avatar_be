@@ -132,11 +132,7 @@ async def send_videos(is_check=False):
         update_list.append({"$set": {"tiktoks": new_tiktoks_arr}})
 
         # Get user session
-        session_id = user.get("session_id", None)
-        if session_id is None:
-            curr_session = Session(user)
-        else:
-            curr_session = Session.from_user(user)
+        curr_session = Session.from_user(user)
 
         # Log messages to mongo
         first_message = "hey, thought you'd like this:"

@@ -8,6 +8,7 @@ from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from common.metadata import METADATA_MESSAGE_ID_KEY, MetadataMixIn
 from dbs.mongo import MongoMixin, mongo_upsert
 from entity.base import Entity
+from messaging import send_message
 
 ROLE_TO_CLASS_DICT = {"ai": AIMessage, "human": HumanMessage, "system": SystemMessage}
 ROLE_TO_SPEAKER_DICT = {"ai": "you", "human": "your friend", "system": "N/A"}
@@ -23,6 +24,7 @@ class Message(MetadataMixIn, MongoMixin):
         message_id: Optional[str] = None,
         entities: Optional[List[Entity]] = None,
         message_type: Optional[str] = "Plaintext",
+        metadata: Optional[dict] = None,
     ):
         self.content = content
         self.role = role
@@ -32,6 +34,7 @@ class Message(MetadataMixIn, MongoMixin):
         self.message_id = message_id or str(uuid4())
         self.entities = entities or []
         self.message_type = message_type
+        self.metadata = metadata or {}
 
     def to_dict(self) -> dict:
         return {
@@ -43,6 +46,7 @@ class Message(MetadataMixIn, MongoMixin):
             "speaker": self.speaker,
             "entity_ids": [entity.entity_id for entity in self.entities],
             "message_type": self.message_type,
+            "metadata": self.metadata,
         }
 
     @property
@@ -59,8 +63,14 @@ class Message(MetadataMixIn, MongoMixin):
     def add_entities(self, entities: List[Entity]) -> None:
         self.entities.extend(entities)
 
+    def send(self, number):
+        """Send Message to number."""
+        send_message(self.content, number)
+        self.log_to_mongo()
+
     def log_to_mongo(self) -> None:
         message_dict = self.to_dict()
+        message_dict["created_time"] = datetime.now(tz=timezone.utc)
         mongo_upsert("Messages", {"message_id": self.message_id}, message_dict)
 
     def format(self) -> str:

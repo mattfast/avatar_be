@@ -1,22 +1,23 @@
-import requests
 import urllib
 
+import requests
+
 from keys import spotify_client_id, spotify_client_secret
+
 
 def get_access_token():
     try:
         r = requests.post(
             "https://accounts.spotify.com/api/token",
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={
                 "grant_type": "client_credentials",
                 "client_id": spotify_client_id,
-                "client_secret": spotify_client_secret
-            })
+                "client_secret": spotify_client_secret,
+            },
+        )
         print(r.status_code)
-        
+
         r_json = r.json()
         print(r_json)
         return r_json["access_token"]
@@ -25,15 +26,15 @@ def get_access_token():
         print(e)
         return None
 
+
 def get_entity_id(access_token, q, type):
     try:
-        search_params = urllib.parse.urlencode({ "q": q, "type": type })
+        search_params = urllib.parse.urlencode({"q": q, "type": type})
         r = requests.get(
             f"https://api.spotify.com/v1/search?{search_params}",
-            headers={
-                "Authorization": f"Bearer {access_token}"
-            })
-        
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
         r_json = r.json()
         items = r_json[f"{type}s"]["items"]
 
@@ -42,21 +43,23 @@ def get_entity_id(access_token, q, type):
         print("Unable to get entity id")
         return None
 
+
 def parse_recommendations(track):
     return {
         "album_name": track["album"]["name"],
         "artist_names": list(map(lambda y: y["name"], track["artists"])),
-        "name": track["name"]
+        "name": track["name"],
+        "spotify_url": track["external_urls"]["spotify"],
     }
 
-# currently, type must be an artist, track or genre
+
+# currently, type must be an artist or track, genre
 def get_recommendation(q, type):
     try:
         access_token = get_access_token()
         if access_token is None:
             return None
-        
-        entity_id = ""
+
         if type != "genre":
             entity_id = get_entity_id(access_token, q, type)
             if entity_id is None:
@@ -65,24 +68,24 @@ def get_recommendation(q, type):
             entity_id = q
 
         type_string = f"seed_{type}s"
-        search_params = urllib.parse.urlencode({ type_string: entity_id })
+        search_params = urllib.parse.urlencode({type_string: entity_id})
 
         r = requests.get(
             f"https://api.spotify.com/v1/recommendations?{search_params}",
-            headers={
-                "Authorization": f"Bearer {access_token}"
-            })
-        
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
         r_json = r.json()
         tracks = r_json["tracks"]
-        print(tracks)
+        print(tracks[0])
         top_recs = list(map(parse_recommendations, tracks[:3]))
-        
+
         return top_recs
 
     except:
         print("Unable to generate recommendations")
         return None
+
     
 def get_genre_seeds():
     try:
@@ -108,4 +111,3 @@ def get_genre_seeds():
 
 
 
-    

@@ -9,12 +9,20 @@ embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 fast_model = OpenAI(
     model="text-davinci-003", temperature=0, openai_api_key=openai_api_key
 )
-chat_model = ChatOpenAI(temperature=0, openai_api_key=openai_api_key)
+chat_model = ChatOpenAI(temperature=0.2, openai_api_key=openai_api_key)
 simple_model = OpenAI(
     model="text-babbage-001", temperature=0, openai_api_key=openai_api_key
 )
+gpt_4_model = ChatOpenAI(
+    temperature=0.2, model_name="gpt-4", openai_api_key=openai_api_key
+)
 
-MODEL_DICT = {"babbage": simple_model, "chat": chat_model, "fast": fast_model}
+MODEL_DICT = {
+    "babbage": simple_model,
+    "chat": chat_model,
+    "fast": fast_model,
+    "gpt-4": gpt_4_model,
+}
 pronoun_list = [
     "she",
     "he",
