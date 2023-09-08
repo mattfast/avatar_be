@@ -4,19 +4,21 @@ from uuid import uuid4
 
 from flask import Flask, Response, request
 from sendblue import Sendblue
+#from flask_socketio import emit
 
 from conversation.session import Session
 from dbs.mongo import mongo_read, mongo_upsert
+#from application import socketio
 
 MAX_WAIT_TIME_SECS = 5
 
-
-def talk(user, new_message, is_check=False):
+def talk(user, new_message, is_check=False, send_ws=False):
     """Talk with a specific player."""
     print("USER")
     print(user)
     print("USER NUMBER")
     user_num = user["number"]
+    user_sid = user["sid"]
     print(user_num)
 
     print("NEW MESSAGE")
@@ -25,14 +27,21 @@ def talk(user, new_message, is_check=False):
     # If no user id, then create one before getting a session
     if user.get("user_id", None) is None:
         id = str(uuid4())
-        mongo_upsert("Users", {"number": user_num}, {"user_id": id})
+        if send_ws:
+            mongo_upsert("Users", {"sid": user_sid}, {"user_id": id})
+        else:
+            mongo_upsert("Users", {"number": user_num}, {"user_id": id})
         user["user_id"] = id
 
     curr_session = Session.from_user(user)
 
     user["session_id"] = curr_session.session_id
-    insertion_dict = {"number": user_num, "session_id": curr_session.session_id}
-    mongo_upsert("Users", {"number": user_num}, insertion_dict)
+    if send_ws:
+        insertion_dict = {"sid": user_sid, "session_id": curr_session.session_id}
+        mongo_upsert("Users", {"sid": user_sid}, insertion_dict)
+    else:
+        insertion_dict = {"number": user_num, "session_id": curr_session.session_id}
+        mongo_upsert("Users", {"number": user_num}, insertion_dict)
 
     start_time = time.time()
     next_messages = curr_session.process_next_message(new_message)
@@ -62,7 +71,14 @@ def talk(user, new_message, is_check=False):
         or last_message.get("message_id", None) == last_message_id
         and not is_check
     ):
+        messages = []
         for next_message in next_messages:
-            next_message.send(user["number"])
-            time.sleep(0.5)
+            if send_ws:
+                messages.append(next_message.content)
+                next_message.log_to_mongo()
+            else:
+                next_message.send(user["number"])
+                time.sleep(0.5)
         curr_session.update_on_send(next_messages)
+
+        return messages

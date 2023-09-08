@@ -93,6 +93,7 @@ class Session(MetadataMixIn, MongoMixin):
         session = mongo_read("Session", {"session_id": session_id})
 
         if session is None:
+            print("CREATING NEW SESSION")
             return Session(user, is_first_conversation=True)
 
         last_sent_time = session.get(
