@@ -48,10 +48,14 @@ def handle_message(data):
     
     #t = threading.Thread(target=talk, args=(user, data["msg"]), kwargs={ 'send_ws': True, 'socket': socketio })
     #t.start()
+    emit('typing', room=data["sid"])
     messages = talk(user, data["msg"], send_ws=True)
-    for message in messages:
-        time.sleep(len(message) * 0.03)
-        emit('message', { 'msg': message }, room=data["sid"])
+    for i in range(0, len(messages)):
+        time.sleep(len(messages[i]) * 0.03)
+        emit('message', { 'msg': messages[i] }, room=data["sid"])
+        if i != len(messages) - 1:
+            emit('typing', room=data["sid"])
+
 
 @app.route("/", methods=["GET"])
 def health_check():
