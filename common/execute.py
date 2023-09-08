@@ -1,7 +1,7 @@
 from langchain.schema import SystemMessage
 
 from common.prompt import Prompt
-from constants import MODEL_DICT
+from constants import MODEL_DICT, chat_models_list
 
 
 def clean_response(result: str) -> str:
@@ -15,7 +15,7 @@ def compile_and_run_prompt(prompt_cls, dict_options: dict, **kwargs):
         final_prompt = prompt_cls(dict_options)
     except:
         raise ValueError("Missing dictionary Keys")
-    if final_prompt.model == "chat" or final_prompt.model == "gpt-4":
+    if final_prompt.model in chat_models_list:
         return run_chat_prompt(
             final_prompt.template,
             verbose=final_prompt.verbose,

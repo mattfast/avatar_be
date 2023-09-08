@@ -13,6 +13,17 @@ Does their response make sense in regards to what you said? Output YES/NO: reaso
 """
 
 
+class AskedAnyQuestionsPrompt(Prompt):
+    name = "AskedAnyQuestionsPrompt"
+    version = "0.0.1"
+    template = """You are having a conversation with a friend.
+
+Your friend, in response, said: {message}.
+
+Are they asking any questions you need to respond to? Output YES/NO: reason for decision
+"""
+
+
 class TriagePrompt(Prompt):
     name = "FirstResponsePrompt"
     model = "gpt-4"

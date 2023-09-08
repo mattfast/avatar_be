@@ -22,8 +22,14 @@ from tiktok.logic import (
 
 app = Flask(__name__)
 CORS(app)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins=['http://localhost:3000'], async_mode='threading', transports=['websocket'])
+app.config["SECRET_KEY"] = "secret!"
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=["http://localhost:3000"],
+    async_mode="threading",
+    transports=["websocket"],
+)
+
 
 @socketio.on('connect', namespace="/chat")
 def connect():
@@ -31,6 +37,7 @@ def connect():
     print("ROOM")
     print(request.sid)
     emit('connection', { 'sid': request.sid }, room=request.sid)
+
 
 @socketio.on('message', namespace="/chat")
 def handle_message(data):
@@ -241,6 +248,12 @@ if __name__ == "__main__":
             "/etc/letsencrypt/live/milk-be.com/fullchain.pem",
             "/etc/letsencrypt/live/milk-be.com/privkey.pem",
         )
-        socketio.run(app, host="0.0.0.0", port=8080, ssl_context=context, allow_unsafe_werkzeug=True)
+        socketio.run(
+            app,
+            host="0.0.0.0",
+            port=8080,
+            ssl_context=context,
+            allow_unsafe_werkzeug=True,
+        )
     else:
         socketio.run(app, host="0.0.0.0", port=8080, allow_unsafe_werkzeug=True)

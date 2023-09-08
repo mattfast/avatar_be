@@ -2,7 +2,7 @@ import threading
 import time
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from langchain.schema import BaseMessage
@@ -141,6 +141,11 @@ class Session(MetadataMixIn, MongoMixin):
         is_first_conversation = len(last_messages) == 0 or last_messages[
             -1
         ].metadata.get("is_first_conversation", False)
+        print("REACHED OAINSDOIASNDOIN")
+        print(is_first_conversation)
+        for message in last_messages:
+            print(message.content)
+            print(message.role)
         return cls(
             user,
             is_first_conversation,
@@ -198,7 +203,9 @@ class Session(MetadataMixIn, MongoMixin):
 
         return entity_list
 
-    def continue_first_conversation(self, user_message: Message) -> List[Message]:
+    def continue_first_conversation(
+        self, user_message: Message
+    ) -> Tuple[bool, List[Message]]:
         """Continue first conversation."""
         # Find the place in the conversation
         ai_message = self.get_last_ai_message()
@@ -207,7 +214,9 @@ class Session(MetadataMixIn, MongoMixin):
         print(curr_step)
         func = FIRST_CONVO_STEP_MAP.get(curr_step, None)
         if func is None:
-            return [Message("FIRST CONVO FINISHED", "ai", self.session_id, metadata={})]
+            return False, [
+                Message("FIRST CONVO FINISHED", "ai", self.session_id, metadata={})
+            ]
         return func(
             self.session_id, self.prev_messages, self.user_messages, user_message
         )
@@ -222,10 +231,14 @@ class Session(MetadataMixIn, MongoMixin):
         )
         user_message.log_to_mongo()
 
+        messages_to_ret = []
         if self.is_first_conversation:
-            messages_to_ret = self.continue_first_conversation(user_message)
+            run_general, messages_to_ret = self.continue_first_conversation(
+                user_message
+            )
             self.user_messages += [user_message]
-            return messages_to_ret
+            if not run_general:
+                return messages_to_ret
 
         emotions_list = []
         emotions_thread = threading.Thread(
@@ -240,9 +253,7 @@ class Session(MetadataMixIn, MongoMixin):
 
         emotions_thread.join()
 
-        return self.run_main_prompt(
-            emotions_list,
-        )
+        return self.run_main_prompt(emotions_list, messages_to_ret)
 
     def extract_emotions(self, curr_user_message, emotions_list):
         """Extract Emotions."""
@@ -311,8 +322,7 @@ class Session(MetadataMixIn, MongoMixin):
         init_list.append(initiative_res)
 
     def run_main_prompt(
-        self,
-        emotions_list: List[str],
+        self, emotions_list: List[str], ending_messages: List[Message]
     ) -> List[Message]:
         # TODO: Update with all entities mentioned in the past 3-5 messages
         # Build an LRU cache
@@ -403,12 +413,13 @@ class Session(MetadataMixIn, MongoMixin):
         print(chat_response)
 
         ai_message = Message(chat_response, "ai", self.session_id)
-        return [ai_message]
+        return [ai_message] + ending_messages
 
     def update_on_send(self, ai_messages: List[Message]):
         # TODO: Change this functionality ASAP.
         # TODO: Only sending one message rn, so doesn't matter. But should
-        last_message = ai_messages[-1]
+        last_message = ai_messages[0]
+        last_message.content = ". ".join([message.content for message in ai_messages])
         print("LAST MESSAGE")
         print(last_message.content)
         if not self.is_first_conversation:

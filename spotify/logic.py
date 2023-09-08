@@ -86,7 +86,7 @@ def get_recommendation(q, type):
         print("Unable to generate recommendations")
         return None
 
-    
+
 def get_genre_seeds():
     try:
         access_token = get_access_token()
@@ -95,19 +95,14 @@ def get_genre_seeds():
 
         r = requests.get(
             f"https://api.spotify.com/v1/recommendations/available-genre-seeds",
-            headers={
-                "Authorization": f"Bearer {access_token}"
-            })
-        
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
         r_json = r.json()
         genres = r_json["genres"]
-        
+
         return genres
 
     except:
         print("Unable to retrieve genre seeds")
         return None
-
-
-
-

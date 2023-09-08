@@ -1,10 +1,11 @@
 import random
 import threading
-from typing import List
+from typing import List, Tuple
 
 from ai.personality import default_personality
 from common.execute import compile_and_run_prompt
 from conversation.first_conversation.prompts.responses import (
+    AskedAnyQuestionsPrompt,
     AskingAboutMePrompt,
     MusicPrompt,
     PreferredResponseTemplate,
@@ -50,15 +51,17 @@ def did_respond_prompt(
         respond_list.append("no")
 
 
-def asking_about_me(about_me_list: List, user_messages: List[Message]):
-    about_me = compile_and_run_prompt(
-        AskingAboutMePrompt,
-        {"message": ". ".join([message.content for message in user_messages])},
+def asked_questions_prompt(questions_list: List, user_messages: List[Message]):
+    did_respond = compile_and_run_prompt(
+        AskedAnyQuestionsPrompt,
+        {
+            "message": ". ".join([message.content for message in user_messages]),
+        },
     ).lower()
-    if "yes" in about_me:
-        about_me_list.append("yes")
+    if "yes" in did_respond:
+        questions_list.append(True)
     else:
-        about_me_list.append("no")
+        questions_list.append(False)
 
 
 def said_yes(
@@ -88,14 +91,14 @@ def send_first_message(
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
-) -> List[Message]:
+) -> Tuple[bool, List[Message]]:
     metadata = {"step": 1, "is_first_conversation": True}
     first_message = Message("hey!", "ai", session_id, metadata=metadata)
     second_message = Message(
         "i'm your high school's ai", "ai", session_id, metadata=metadata
     )
     third_message = Message("you go to lex right?", "ai", session_id, metadata=metadata)
-    return [first_message, second_message, third_message]
+    return False, [first_message, second_message, third_message]
 
 
 def send_second_message(
@@ -103,11 +106,26 @@ def send_second_message(
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
-) -> List[Message]:
+) -> Tuple[bool, List[Message]]:
     metadata = {"step": 2, "is_first_conversation": True}
     all_user_messages = user_messages + [curr_message]
+    final_message = Message(
+        "anyways, what's your name?", "ai", session_id, metadata=metadata
+    )
 
+    respond_list = []
     just_said = "you go to lex, right?"
+    did_respond_prompt(respond_list, "you go to lex right?", all_user_messages)
+    print(f"DID RESPOND: {respond_list[0]}")
+    if respond_list[0] == "no":
+        return True, [final_message]
+
+    additional_ask_list = []
+    ask_thread = threading.Thread(
+        target=asked_questions_prompt, args=[additional_ask_list, all_user_messages]
+    )
+    ask_thread.start()
+
     said_yes = compile_and_run_prompt(
         SayYesPrompt,
         {
@@ -138,11 +156,12 @@ def send_second_message(
     starting_arr = [first_message, second_message]
     if third_message is not None:
         starting_arr = starting_arr + [third_message]
-    final_message = Message(
-        "anyways, what's your name?", "ai", session_id, metadata=metadata
-    )
     starting_arr += [final_message]
-    return starting_arr
+    ask_thread.join()
+
+    should_continue_conv = additional_ask_list[0]
+
+    return should_continue_conv, starting_arr
 
 
 def send_third_message(
@@ -150,13 +169,23 @@ def send_third_message(
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message: Message,
-) -> List[Message]:
+) -> Tuple[bool, List[Message]]:
     metadata = {"step": 3, "is_first_conversation": True}
-    first_message = Message("great to meet you!", "ai", session_id, metadata=metadata)
+    all_user_messages = user_messages + [curr_message]
+    respond_list = []
+    just_said = "what's your name?"
+    did_respond_prompt(respond_list, just_said, all_user_messages)
+    print(f"DID RESPOND: {respond_list[0]}")
+
     second_message = Message(
         "any good plans today?", "ai", session_id, metadata=metadata
     )
-    return [first_message, second_message]
+
+    if respond_list[0] == "no":
+        return True, [second_message]
+
+    first_message = Message("great to meet you!", "ai", session_id, metadata=metadata)
+    return False, [first_message, second_message]
 
 
 # Affirm that they knew it, didn't know went to a school + ask about dogs + cats
@@ -165,7 +194,7 @@ def send_fourth_message(
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
-) -> List[Message]:
+) -> Tuple[bool, List[Message]]:
     metadata = {"step": 4, "is_first_conversation": True}
     extra_guidance = """## If the message is only about homework just say: "rip, which subjects?"
     ## If the message mentions a specific sport, say something, like: "how long have you played [specific sport]?",
@@ -190,7 +219,6 @@ def send_fourth_message(
 
     all_user_messages = user_messages + [curr_message]
     responded_list = []
-    about_me_list = []
     respond_thread = threading.Thread(
         target=did_respond_prompt,
         args=[
@@ -199,18 +227,13 @@ def send_fourth_message(
             all_user_messages,
         ],
     )
-    about_me_thread = threading.Thread(
-        target=asking_about_me, args=[about_me_list, all_user_messages]
-    )
 
     respond_thread.start()
-    about_me_thread.start()
-
     respond_thread.join()
-    about_me_thread.join()
+    print(f"DID RESPOND: {responded_list[0]}")
 
-    about_me_message = Message(
-        "tbh i don't have much going on", "ai", session_id, metadata=metadata
+    final_message = Message(
+        "anyways, are u a dog or a cat person?", "ai", session_id, metadata=metadata
     )
 
     if responded_list[0] == "yes":
@@ -256,14 +279,9 @@ def send_fourth_message(
         secondary_res_message = Message(
             secondary_res, "ai", session_id, metadata=metadata
         )
-        return_arr = [primary_res_message, secondary_res_message]
-        if about_me_list[0] == "yes":
-            return_arr = [about_me_message] + return_arr
-        final_message = Message(
-            "anyways, are u a dog or a cat person?", "ai", session_id, metadata=metadata
-        )
-        return return_arr + [final_message]
-    return []
+        return_arr = [secondary_res_message, primary_res_message]
+        return False, return_arr + [final_message]
+    return True, [final_message]
 
 
 # Send tiktoks + music rec question
@@ -272,7 +290,7 @@ def send_fifth_message(
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
-) -> List[Message]:
+) -> Tuple[bool, List[Message]]:
     metadata = {"step": 5, "is_first_conversation": True}
     say_yes_list = []
     all_user_messages = user_messages + [curr_message]
@@ -294,7 +312,7 @@ def send_fifth_message(
         say_yes_list,
         ai_initiations,
         all_user_messages,
-        "anyways, do you like dogs or cats?",
+        "anyways, are u a dog or a cat person?",
     )
 
     last_messages_to_respond = [
@@ -337,7 +355,7 @@ def send_fifth_message(
     final_message = Message(
         "btw, what kind of music do you like?", "ai", session_id, metadata=metadata
     )
-    return [first_message, ai_tiktok_preface, ai_tiktok_url, final_message]
+    return False, [first_message, ai_tiktok_preface, ai_tiktok_url, final_message]
 
 
 # Send out music rec
@@ -346,8 +364,21 @@ def send_sixth_message(
     prev_messages: List[Message],
     user_messages: List[Message],
     curr_message,
-) -> List[Message]:
+) -> Tuple[bool, List[Message]]:
     metadata = {"step": 6, "is_first_conversation": False}
+
+    all_user_messages = user_messages + [curr_message]
+    responded_list = []
+    did_respond_prompt(
+        responded_list,
+        "btw, what kind of music do you like?",
+        all_user_messages,
+    )
+    print(f"DID RESPOND: {responded_list[0]}")
+
+    if responded_list[0] == "no":
+        return True, []
+
     rec = (
         compile_and_run_prompt(
             MusicPrompt,
@@ -368,7 +399,7 @@ def send_sixth_message(
     response = f"check out {song['name'].lower()} by {song['artist_names'][0].lower()}. lmk what you think"
     ai_first_message = Message(response, "ai", session_id, metadata=metadata)
     ai_url_message = Message(song["spotify_url"], "ai", session_id, metadata=metadata)
-    return [first_message, ai_first_message, ai_url_message]
+    return False, [first_message, ai_first_message, ai_url_message]
 
 
 ########### FOR SENDING MESSAGES ###########
