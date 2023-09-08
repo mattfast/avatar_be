@@ -75,13 +75,18 @@ def talk(user, new_message, is_check=False, send_ws=False):
         and not is_check
     ):
         messages = []
+        is_first = True
         for next_message in next_messages:
             if send_ws:
                 messages.append(next_message.content)
                 next_message.log_to_mongo()
+
+                ## detect if first conversation is over
+                if next_message.metadata.get("is_first_conversation", True) == False:
+                    is_first = False
             else:
                 next_message.send(user["number"])
                 time.sleep(0.5)
         curr_session.update_on_send(next_messages)
 
-        return messages
+        return messages, is_first
