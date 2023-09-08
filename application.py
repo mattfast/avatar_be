@@ -18,6 +18,7 @@ from tiktok.logic import (
     tag_videos,
     trending_videos,
 )
+from dbs.mongo import mongo_upsert
 
 # import uuid
 
@@ -70,6 +71,41 @@ def handle_message(data):
         emit("message", {"msg": messages[i]}, room=data["sid"])
         if i != len(messages) - 1:
             emit("typing", room=data["sid"])
+
+@socketio.on("email", namespace="/chat")
+def handle_email(data):
+    if (
+        data is None
+        or data["sid"] is None
+        or data["email"] is None
+        or data["sid"] == ""
+        or data["email"] == ""
+    ):
+        print("DATA NOT FORMATTED CORRECTLY")
+        return
+    
+    print("WRITING EMAIL")
+    print(data)
+    insertion_dict = {"sid": data["sid"], "email": data["email"]}
+    mongo_upsert("Users", {"sid": data["sid"]}, insertion_dict)
+
+@socketio.on("phone", namespace="/chat")
+def handle_phone(data):
+    if (
+        data is None
+        or data["sid"] is None
+        or data["phone"] is None
+        or data["sid"] == ""
+        or data["phone"] == ""
+    ):
+        print("DATA NOT FORMATTED CORRECTLY")
+        return
+    
+    print("WRITING PHONE")
+    print(data)
+    insertion_dict = {"sid": data["sid"], "number": data["phone"]}
+    mongo_upsert("Users", {"sid": data["sid"]}, insertion_dict)
+    
 
 
 @app.route("/", methods=["GET"])
