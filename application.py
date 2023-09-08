@@ -1,7 +1,6 @@
 import asyncio
 import threading
 import time
-#import uuid
 
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -20,6 +19,9 @@ from tiktok.logic import (
     trending_videos,
 )
 
+# import uuid
+
+
 app = Flask(__name__)
 CORS(app)
 app.config["SECRET_KEY"] = "secret!"
@@ -31,20 +33,26 @@ socketio = SocketIO(
 )
 
 
-@socketio.on('connect', namespace="/chat")
+@socketio.on("connect", namespace="/chat")
 def connect():
     print("CONNECTED")
     print("ROOM")
     print(request.sid)
-    emit('connection', { 'sid': request.sid }, room=request.sid)
+    emit("connection", {"sid": request.sid}, room=request.sid)
 
 
-@socketio.on('message', namespace="/chat")
+@socketio.on("message", namespace="/chat")
 def handle_message(data):
-    print('received message: ')
+    print("received message: ")
     print(data)
 
-    if data is None or data["sid"] is None or data["msg"] is None or data["sid"] == "" or data["msg"] == "":
+    if (
+        data is None
+        or data["sid"] is None
+        or data["msg"] is None
+        or data["sid"] == ""
+        or data["msg"] == ""
+    ):
         print("DATA NOT FORMATTED CORRECTLY")
         return
 
@@ -52,21 +60,22 @@ def handle_message(data):
     if user is None:
         print("ERROR CREATING OR FINDING USER")
         return
-    
-    #t = threading.Thread(target=talk, args=(user, data["msg"]), kwargs={ 'send_ws': True, 'socket': socketio })
-    #t.start()
-    emit('typing', room=data["sid"])
+
+    # t = threading.Thread(target=talk, args=(user, data["msg"]), kwargs={ 'send_ws': True, 'socket': socketio })
+    # t.start()
+    emit("typing", room=data["sid"])
     messages = talk(user, data["msg"], send_ws=True)
     for i in range(0, len(messages)):
         time.sleep(len(messages[i]) * 0.03)
-        emit('message', { 'msg': messages[i] }, room=data["sid"])
+        emit("message", {"msg": messages[i]}, room=data["sid"])
         if i != len(messages) - 1:
-            emit('typing', room=data["sid"])
+            emit("typing", room=data["sid"])
 
 
 @app.route("/", methods=["GET"])
 def health_check():
     return "healthy!"
+
 
 @app.route("/bot", methods=["POST"])
 def message():

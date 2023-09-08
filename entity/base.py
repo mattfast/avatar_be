@@ -229,6 +229,7 @@ class Entity(BaseModel, MetadataMixIn, MongoMixin):
             core_sentiment=self.sentiment,
         )
 
+    @classmethod
     @property
     def metadata_key(self) -> str:
         return METADATA_ENTITY_KEY

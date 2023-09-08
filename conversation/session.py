@@ -67,13 +67,14 @@ class Session(MetadataMixIn, MongoMixin):
         last_message_sent: Optional[datetime] = None,
     ):
         self.user = user
-        self.is_first_conversation = is_first_conversation
+        self.is_first_conversation = False
         self.session_id = session_id or str(uuid4())
         self.prev_messages, self.user_messages = partition_prev_messages(messages)
         self.session_info = session_info or default_ai_session_info
         self.session_user_info = session_user_info or default_user_session_info
         self.last_message_sent = last_message_sent or datetime.now(tz=timezone.utc)
 
+    @classmethod
     @property
     def metadata_key(self) -> str:
         return METADATA_SESSION_ID_KEY

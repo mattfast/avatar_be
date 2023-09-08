@@ -22,13 +22,19 @@ gpt_4_model = ChatOpenAI(
     temperature=0.2, model_name="gpt-4", openai_api_key=openai_api_key
 )
 
-chat_models_list = ["chat", "gpt-4", "old_chat"]
+old_gpt_4_model = ChatOpenAI(
+    temperature=0.2, model_name="gpt-4-0314", openai_api_key=openai_api_key
+)
+
+chat_models_set = {"chat", "gpt-4", "old_chat", "old_gpt4"}
+
 MODEL_DICT = {
     "babbage": simple_model,
     "chat": chat_model,
     "old_chat": old_chat_model,
     "fast": fast_model,
     "gpt-4": gpt_4_model,
+    "old_gpt4": old_gpt_4_model,
 }
 pronoun_list = [
     "she",

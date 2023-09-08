@@ -4,13 +4,16 @@ from uuid import uuid4
 
 from flask import Flask, Response, request
 from sendblue import Sendblue
-#from flask_socketio import emit
 
 from conversation.session import Session
 from dbs.mongo import mongo_read, mongo_upsert
-#from application import socketio
+
+# from flask_socketio import emit
+
+# from application import socketio
 
 MAX_WAIT_TIME_SECS = 5
+
 
 def talk(user, new_message, is_check=False, send_ws=False):
     """Talk with a specific player."""
@@ -18,7 +21,7 @@ def talk(user, new_message, is_check=False, send_ws=False):
     print(user)
     print("USER NUMBER")
     user_num = user["number"]
-    user_sid = user["sid"]
+    user_sid = user.get("sid", None)
     print(user_num)
 
     print("NEW MESSAGE")

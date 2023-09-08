@@ -26,6 +26,12 @@ def get_users():
 
 def create_user(user_number, is_sid=False):
     mongo_write(
-        "Users", {"number": "" if is_sid else user_number, "session_id": "", "sid": user_number if is_sid else "", "user_id": str(uuid4())}
+        "Users",
+        {
+            "number": "" if is_sid else user_number,
+            "session_id": "",
+            "sid": user_number if is_sid else "",
+            "user_id": str(uuid4()),
+        },
     )
-    return mongo_read("Users", { "sid" if is_sid else "number": user_number })
+    return mongo_read("Users", {"sid" if is_sid else "number": user_number})

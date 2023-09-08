@@ -69,7 +69,7 @@ Brainstorm Response:
 class MainChatPrompt(Prompt):
     name = "MainChatPrompt"
     verbose = True
-    model = "old_chat"
+    model = "old_gpt4"
     version = "0.0.1"
     template = """You are {self_name}. You have been texting for a while with a friend.
 {self_personality}

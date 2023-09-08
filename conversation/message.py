@@ -49,12 +49,19 @@ class Message(MetadataMixIn, MongoMixin):
             "metadata": self.metadata,
         }
 
+    @classmethod
     @property
     def metadata_key(self) -> str:
         return METADATA_MESSAGE_ID_KEY
 
     def modify_metadata_dict(self, metadata: dict) -> dict:
-        metadata[self.metadata_key] = self.message_id
+        metadata[self.metadata_key] = self.message_ids
+
+        # Ensure that the entity dict is still maintained
+        curr_entity_dict = metadata.get(Entity.metadata_key, None)
+        if len(self.entities) == 0 and curr_entity_dict is None:
+            metadata[Entity.metadata_key] = []
+
         # For all entities in the dictionary, modify the dictionary
         for entity in self.entities:
             metadata = entity.modify_metadata_dict(metadata)
