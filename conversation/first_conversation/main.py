@@ -279,7 +279,7 @@ def send_fourth_message(
         secondary_res_message = Message(
             secondary_res, "ai", session_id, metadata=metadata
         )
-        return_arr = [primary_res_message, secondary_res_message]
+        return_arr = [secondary_res_message, primary_res_message]
         return False, return_arr + [final_message]
     return True, [final_message]
 
