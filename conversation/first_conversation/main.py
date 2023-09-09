@@ -42,7 +42,9 @@ def did_respond_prompt(
         RespondedPrompt,
         {
             "said": query_str,
-            "message": ". ".join([message.content for message in user_messages]),
+            "message": "AND SAID ".join(
+                [f'"{message.content}"' for message in user_messages]
+            ),
         },
     ).lower()
     if "yes" in did_respond:
@@ -58,6 +60,8 @@ def asked_questions_prompt(questions_list: List, user_messages: List[Message]):
             "message": ". ".join([message.content for message in user_messages]),
         },
     ).lower()
+    print("DID RESPOND")
+    print(did_respond)
     if "yes" in did_respond:
         questions_list.append(True)
     else:
@@ -174,6 +178,11 @@ def send_third_message(
     all_user_messages = user_messages + [curr_message]
     respond_list = []
     just_said = "what's your name?"
+    additional_ask_list = []
+    ask_thread = threading.Thread(
+        target=asked_questions_prompt, args=[additional_ask_list, all_user_messages]
+    )
+    ask_thread.start()
     did_respond_prompt(respond_list, just_said, all_user_messages)
     print(f"DID RESPOND: {respond_list[0]}")
 
@@ -184,8 +193,14 @@ def send_third_message(
     if respond_list[0] == "no":
         return True, [second_message]
 
+    ask_thread.join()
+    should_continue_conv = additional_ask_list[0]
+
+    to_ret = [second_message]
     first_message = Message("great to meet you!", "ai", session_id, metadata=metadata)
-    return False, [first_message, second_message]
+    if not should_continue_conv:
+        to_ret = [first_message] + to_ret
+    return should_continue_conv, to_ret
 
 
 # Affirm that they knew it, didn't know went to a school + ask about dogs + cats
@@ -218,6 +233,12 @@ def send_fourth_message(
     last_ai_message_to_respond = prev_messages[-1].as_langchain_message()
 
     all_user_messages = user_messages + [curr_message]
+    additional_ask_list = []
+    ask_thread = threading.Thread(
+        target=asked_questions_prompt, args=[additional_ask_list, all_user_messages]
+    )
+    ask_thread.start()
+
     responded_list = []
     respond_thread = threading.Thread(
         target=did_respond_prompt,
@@ -230,13 +251,14 @@ def send_fourth_message(
 
     respond_thread.start()
     respond_thread.join()
+    ask_thread.join()
     print(f"DID RESPOND: {responded_list[0]}")
 
     final_message = Message(
         "anyways, are u a dog or a cat person?", "ai", session_id, metadata=metadata
     )
 
-    if responded_list[0] == "yes":
+    if responded_list[0] == "yes" and not additional_ask_list[0]:
         # only run replace if original does not have exclamation points
         primary_res_content = (
             compile_and_run_prompt(
@@ -376,8 +398,9 @@ def send_sixth_message(
     )
     print(f"DID RESPOND: {responded_list[0]}")
 
+    continue_conversation = False
     if responded_list[0] == "no":
-        return True, []
+        continue_conversation = True
 
     rec = (
         compile_and_run_prompt(
@@ -399,7 +422,10 @@ def send_sixth_message(
     response = f"check out {song['name'].lower()} by {song['artist_names'][0].lower()}. lmk what you think"
     ai_first_message = Message(response, "ai", session_id, metadata=metadata)
     ai_url_message = Message(song["spotify_url"], "ai", session_id, metadata=metadata)
-    return False, [first_message, ai_first_message, ai_url_message]
+    to_ret = [ai_first_message, ai_url_message]
+    if not continue_conversation:
+        to_ret = [first_message] + to_ret
+    return continue_conversation, to_ret
 
 
 ########### FOR SENDING MESSAGES ###########

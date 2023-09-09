@@ -7,7 +7,7 @@ class RespondedPrompt(Prompt):
     template = """You are having a conversation with a friend.
 
 You just said: {said}
-Your friend, in response, said: {message}.
+Your friend said, in response, a couple things: {message}.
 
 Does their response make sense in regards to what you said? Output YES/NO: reason for decision
 """
@@ -18,7 +18,7 @@ class AskedAnyQuestionsPrompt(Prompt):
     version = "0.0.1"
     template = """You are having a conversation with a friend.
 
-Your friend, in response, said: {message}.
+Your friend said: {message}.
 
 Are they asking any questions you need to respond to? Output YES/NO: reason for decision
 """

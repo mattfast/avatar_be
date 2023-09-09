@@ -342,7 +342,7 @@ class Session(MetadataMixIn, MongoMixin):
         ## Session Specific Information About Conversant
 
         ## Information about ai
-        self_name = self.session_info.get("name")
+        self_name = self.session_info.get("name", "Milk")
         self_personality = self.session_info.get("personality")
         # or positive/negative -> can use sentiment detection here
         self_sentiment = self.session_info.get("sentiment")

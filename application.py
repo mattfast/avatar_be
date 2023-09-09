@@ -8,6 +8,7 @@ from flask_socketio import SocketIO, emit
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
+from dbs.mongo import mongo_upsert
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
 from messaging import send_message
@@ -18,7 +19,6 @@ from tiktok.logic import (
     tag_videos,
     trending_videos,
 )
-from dbs.mongo import mongo_upsert
 
 # import uuid
 
@@ -71,9 +71,10 @@ def handle_message(data):
         emit("message", {"msg": messages[i]}, room=data["sid"])
         if i != len(messages) - 1:
             emit("typing", room=data["sid"])
-    
+
     if is_first is False:
         emit("finishConversation", room=data["sid"])
+
 
 @socketio.on("email", namespace="/chat")
 def handle_email(data):
@@ -86,11 +87,12 @@ def handle_email(data):
     ):
         print("DATA NOT FORMATTED CORRECTLY")
         return
-    
+
     print("WRITING EMAIL")
     print(data)
     insertion_dict = {"sid": data["sid"], "email": data["email"]}
     mongo_upsert("Users", {"sid": data["sid"]}, insertion_dict)
+
 
 @socketio.on("phone", namespace="/chat")
 def handle_phone(data):
@@ -103,12 +105,11 @@ def handle_phone(data):
     ):
         print("DATA NOT FORMATTED CORRECTLY")
         return
-    
+
     print("WRITING PHONE")
     print(data)
     insertion_dict = {"sid": data["sid"], "number": data["phone"]}
     mongo_upsert("Users", {"sid": data["sid"]}, insertion_dict)
-    
 
 
 @app.route("/", methods=["GET"])
