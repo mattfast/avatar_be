@@ -70,7 +70,7 @@ def handle_message(data):
         time.sleep(len(messages[i]) * 0.03)
         emit("message", {"msg": messages[i]}, room=data["sid"])
         if i != len(messages) - 1:
-            emit("typing", room=data["sid"])
+            emit("typing", { "secondary": True }, room=data["sid"])
 
     if is_first is False:
         emit("finishConversation", room=data["sid"])
