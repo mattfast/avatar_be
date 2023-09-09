@@ -19,7 +19,10 @@ from common.metadata import (
     Metadata,
     MetadataMixIn,
 )
-from conversation.first_conversation.main import FIRST_CONVO_STEP_MAP
+from conversation.first_conversation.main import (
+    FIRST_CONVO_LEX_STEP_MAP,
+    FIRST_CONVO_STEP_MAP,
+)
 from conversation.message import (
     Message,
     message_list_to_convo_prompt,
@@ -133,7 +136,7 @@ class Session(MetadataMixIn, MongoMixin):
                     user_name,
                     message_id=message["message_id"],
                     entities=entities,
-                    metadata=message.get("metadata", []),
+                    metadata=message.get("metadata", {}),
                 )
             ] + last_messages
 
@@ -211,15 +214,25 @@ class Session(MetadataMixIn, MongoMixin):
         # Find the place in the conversation
         ai_message = self.get_last_ai_message()
         curr_step = 1 if ai_message is None else ai_message.metadata.get("step", -1) + 1
+        from_lex = (
+            False if ai_message is None else ai_message.metadata.get("is_lex", False)
+        )
         print("CURR STEP")
         print(curr_step)
-        func = FIRST_CONVO_STEP_MAP.get(curr_step, None)
+        if not from_lex:
+            func = FIRST_CONVO_STEP_MAP.get(curr_step, None)
+        else:
+            func = FIRST_CONVO_LEX_STEP_MAP.get(curr_step, None)
         if func is None:
             return False, [
                 Message("FIRST CONVO FINISHED", "ai", self.session_id, metadata={})
             ]
         return func(
-            self.session_id, self.prev_messages, self.user_messages, user_message
+            curr_step,
+            self.session_id,
+            self.prev_messages,
+            self.user_messages,
+            user_message,
         )
 
     def process_next_message(self, message: str) -> List[Message]:

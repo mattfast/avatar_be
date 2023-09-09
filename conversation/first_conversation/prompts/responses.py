@@ -13,6 +13,29 @@ Does their response make sense in regards to what you said? Output YES/NO: reaso
 """
 
 
+class IsFamousNamePrompt(Prompt):
+    name = "IsFamousNamePrompt"
+    version = "0.0.1"
+    template = """You are having a conversation.
+    
+The person just told you that their name is: {name}
+     
+Is the name above a famous celebrity, well-known historical figure, or name from pop culture? Output YES/NO: reason for decision
+"""
+
+
+class ArtistOrGenrePrompt(Prompt):
+    name = "ArtistOrGenrePrompt"
+    version = "0.0.1"
+    template = """You are having a conversation about music with your friend.
+     
+Your friend just said: {message}
+
+Does the message above mention a specific artist/song.
+Output YES/NO: reason for decision
+"""
+
+
 class AskedAnyQuestionsPrompt(Prompt):
     name = "AskedAnyQuestionsPrompt"
     version = "0.0.1"
