@@ -90,3 +90,5 @@ def talk(user, new_message, is_check=False, send_ws=False):
         curr_session.update_on_send(next_messages)
 
         return messages, is_first
+
+    return [], True
