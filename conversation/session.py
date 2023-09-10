@@ -213,7 +213,7 @@ class Session(MetadataMixIn, MongoMixin):
         """Continue first conversation."""
         # Find the place in the conversation
         ai_message = self.get_last_ai_message()
-        curr_step = 1 if ai_message is None else ai_message.metadata.get("step", -1) + 1
+        curr_step = 2 if ai_message is None else ai_message.metadata.get("step", -1) + 1
         from_lex = (
             False if ai_message is None else ai_message.metadata.get("is_lex", False)
         )
