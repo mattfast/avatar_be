@@ -237,9 +237,8 @@ def send_lex_third_message(
                 "sweet. he's honestly the best", "ai", session_id, metadata=metadata
             )
     else:
-        first_message = Message(
-            "wow, that's surprising", "ai", session_id, metadata=metadata
-        )
+        return True, [final_message]
+
 
     ask_thread.join()
 
