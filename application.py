@@ -6,12 +6,14 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from twilio.twiml.messaging_response import MessagingResponse
+from uuid import uuid4
 
 from auth import login
-from dbs.mongo import mongo_upsert
+from dbs.mongo import mongo_upsert, mongo_read
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
 from messaging import send_message
+from conversation.session import Session
 from tiktok.logic import (
     delete_videos,
     detect_video_languages,
@@ -41,6 +43,44 @@ def connect():
     print(request.sid)
     emit("connection", {"sid": request.sid}, room=request.sid)
 
+@socketio.on("cookie", namespace="/chat")
+def cookie(data):
+    if (
+        data is None
+        or data["cookie"] is None
+        or data["cookie"] == ""
+    ):
+        print("DATA NOT FORMATTED CORRECTLY")
+        return
+    
+    print("COOKIE RECEIVED")
+    print(data["cookie"])
+
+    user, is_first = login(data["cookie"], is_cookie=True)
+    if user is None:
+        print("ERROR CREATING OR FINDING USER")
+        return
+    
+    # If no user id, then create one before getting a session
+    if user.get("user_id", None) is None:
+        id = str(uuid4())
+        mongo_upsert("Users", {"cookie": data["cookie"]}, {"user_id": id})
+    
+    curr_session = Session.from_user(user)
+    curr_session.log_to_mongo()
+    messages = mongo_read(
+        "Messages", {"session_id": curr_session.session_id}, find_many=True
+    )
+
+    user["session_id"] = curr_session.session_id
+    insertion_dict = {"cookie": data["cookie"], "session_id": curr_session.session_id}
+    mongo_upsert("Users", {"cookie": data["cookie"]}, insertion_dict)
+
+    print("MESSAGES HERE")
+    listMessages = list(messages)
+    extractedMessages = map(lambda x: { "content": x["content"], "role": x["role"] }, listMessages )
+    print(extractedMessages)
+    emit("previousMessages", { "messages": list(extractedMessages) })
 
 @socketio.on("message", namespace="/chat")
 def handle_message(data):
@@ -51,13 +91,15 @@ def handle_message(data):
         data is None
         or data["sid"] is None
         or data["msg"] is None
+        or data["cookie"] is None
         or data["sid"] == ""
         or data["msg"] == ""
+        or data["cookie"] == ""
     ):
         print("DATA NOT FORMATTED CORRECTLY")
         return
 
-    user, is_first = login(data["sid"], is_sid=True)
+    user, is_first = login(data["cookie"], is_cookie=True)
     if user is None:
         print("ERROR CREATING OR FINDING USER")
         return
@@ -80,9 +122,9 @@ def handle_message(data):
 def handle_email(data):
     if (
         data is None
-        or data["sid"] is None
+        or data["cookie"] is None
         or data["email"] is None
-        or data["sid"] == ""
+        or data["cookie"] == ""
         or data["email"] == ""
     ):
         print("DATA NOT FORMATTED CORRECTLY")
@@ -90,17 +132,17 @@ def handle_email(data):
 
     print("WRITING EMAIL")
     print(data)
-    insertion_dict = {"sid": data["sid"], "email": data["email"]}
-    mongo_upsert("Users", {"sid": data["sid"]}, insertion_dict)
+    insertion_dict = {"cookie": data["cookie"], "email": data["email"]}
+    mongo_upsert("Users", {"cookie": data["cookie"]}, insertion_dict)
 
 
 @socketio.on("phone", namespace="/chat")
 def handle_phone(data):
     if (
         data is None
-        or data["sid"] is None
+        or data["cookie"] is None
         or data["phone"] is None
-        or data["sid"] == ""
+        or data["cookie"] == ""
         or data["phone"] == ""
     ):
         print("DATA NOT FORMATTED CORRECTLY")
@@ -108,8 +150,8 @@ def handle_phone(data):
 
     print("WRITING PHONE")
     print(data)
-    insertion_dict = {"sid": data["sid"], "number": data["phone"]}
-    mongo_upsert("Users", {"sid": data["sid"]}, insertion_dict)
+    insertion_dict = {"cookie": data["cookie"], "number": data["phone"]}
+    mongo_upsert("Users", {"cookie": data["cookie"]}, insertion_dict)
 
 
 @app.route("/", methods=["GET"])

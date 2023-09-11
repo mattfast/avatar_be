@@ -91,10 +91,15 @@ class Session(MetadataMixIn, MongoMixin):
         print("Creating Session from User Info")
         user_name = user.get("name", None)
         session_id = user.get("session_id", None)
+        print("CURR SESSION ID")
+        print(session_id)
 
         if session_id is None:
             return Session(user, is_first_conversation=True)
         session = mongo_read("Session", {"session_id": session_id})
+
+        print("SESSION RETRIEVED")
+        print(session)
 
         if session is None:
             print("CREATING NEW SESSION")
