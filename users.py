@@ -13,9 +13,9 @@ class User(BaseModel, MetadataMixIn):
 
 
 # TODO: Move over to using user_id when using app
-def get_user(user_number, is_sid=False):
-    if is_sid:
-        return mongo_read("Users", {"sid": user_number})
+def get_user(user_number, is_cookie=False):
+    if is_cookie:
+        return mongo_read("Users", {"cookie": user_number})
 
     return mongo_read("Users", {"number": user_number})
 
@@ -24,14 +24,14 @@ def get_users():
     return mongo_read("Users", {}, find_many=True)
 
 
-def create_user(user_number, is_sid=False):
+def create_user(user_number, is_cookie=False):
     mongo_write(
         "Users",
         {
-            "number": "" if is_sid else user_number,
+            "number": "" if is_cookie else user_number,
             "session_id": "",
-            "sid": user_number if is_sid else "",
+            "cookie": user_number if is_cookie else "",
             "user_id": str(uuid4()),
         },
     )
-    return mongo_read("Users", {"sid" if is_sid else "number": user_number})
+    return mongo_read("Users", {"cookie" if is_cookie else "number": user_number})
