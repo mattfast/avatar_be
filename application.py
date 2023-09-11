@@ -1,19 +1,19 @@
 import asyncio
 import threading
 import time
+from uuid import uuid4
 
 from flask import Flask, Response, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from twilio.twiml.messaging_response import MessagingResponse
-from uuid import uuid4
 
 from auth import login
-from dbs.mongo import mongo_upsert, mongo_read
+from conversation.session import Session
+from dbs.mongo import mongo_read, mongo_upsert
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
 from messaging import send_message
-from conversation.session import Session
 from tiktok.logic import (
     delete_videos,
     detect_video_languages,
@@ -30,7 +30,11 @@ CORS(app)
 app.config["SECRET_KEY"] = "secret!"
 socketio = SocketIO(
     app,
-    cors_allowed_origins=["http://localhost:3000", "https://milk-ai.com", "https://milk-ai.com/chat"],
+    cors_allowed_origins=[
+        "http://localhost:3000",
+        "https://milk-ai.com",
+        "https://milk-ai.com/chat",
+    ],
     async_mode="threading",
     transports=["websocket"],
 )
@@ -43,16 +47,13 @@ def connect():
     print(request.sid)
     emit("connection", {"sid": request.sid}, room=request.sid)
 
+
 @socketio.on("cookie", namespace="/chat")
 def cookie(data):
-    if (
-        data is None
-        or data["cookie"] is None
-        or data["cookie"] == ""
-    ):
+    if data is None or data["cookie"] is None or data["cookie"] == "":
         print("DATA NOT FORMATTED CORRECTLY")
         return
-    
+
     print("COOKIE RECEIVED")
     print(data["cookie"])
 
@@ -60,12 +61,12 @@ def cookie(data):
     if user is None:
         print("ERROR CREATING OR FINDING USER")
         return
-    
+
     # If no user id, then create one before getting a session
     if user.get("user_id", None) is None:
         id = str(uuid4())
         mongo_upsert("Users", {"cookie": data["cookie"]}, {"user_id": id})
-    
+
     curr_session = Session.from_user(user)
     curr_session.log_to_mongo()
     messages = mongo_read(
@@ -78,9 +79,12 @@ def cookie(data):
 
     print("MESSAGES HERE")
     listMessages = list(messages)
-    extractedMessages = map(lambda x: { "content": x["content"], "role": x["role"] }, listMessages )
+    extractedMessages = map(
+        lambda x: {"content": x["content"], "role": x["role"]}, listMessages
+    )
     print(extractedMessages)
-    emit("previousMessages", { "messages": list(extractedMessages) })
+    emit("previousMessages", {"messages": list(extractedMessages)})
+
 
 @socketio.on("message", namespace="/chat")
 def handle_message(data):
@@ -112,7 +116,7 @@ def handle_message(data):
         time.sleep(len(messages[i]) * 0.03)
         emit("message", {"msg": messages[i]}, room=data["sid"])
         if i != len(messages) - 1:
-            emit("typing", { "secondary": True }, room=data["sid"])
+            emit("typing", {"secondary": True}, room=data["sid"])
 
     if is_first is False:
         emit("finishConversation", room=data["sid"])

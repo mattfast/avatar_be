@@ -9,7 +9,7 @@ class RespondedPrompt(Prompt):
 You just said: {said}
 Your friend said, in response, a couple things: {message}.
 
-Does their response make sense in regards to what you said? Output YES/NO: reason for decision
+Does one or more of their responses make sense in regards to what you said? Output YES/NO: specific reason for decision (refer to specific responses as to why)
 """
 
 

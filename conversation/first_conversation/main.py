@@ -1,5 +1,6 @@
 import random
 import threading
+from copy import deepcopy
 from typing import List, Tuple
 
 from ai.personality import default_personality
@@ -48,6 +49,7 @@ def did_respond_prompt(
             ),
         },
     ).lower()
+    print(did_respond)
     if "yes" in did_respond:
         respond_list.append("yes")
     else:
@@ -122,16 +124,40 @@ def send_second_message(
 ) -> Tuple[bool, List[Message]]:
     metadata = {"step": step, "is_first_conversation": True}
     all_user_messages = user_messages + [curr_message]
-    final_message = Message(
-        "anyways, what's your name?", "ai", session_id, metadata=metadata
+    respond_name_list = []
+    respond_name_thread = threading.Thread(
+        target=did_respond_prompt,
+        args=[respond_name_list, "hey! what's your name?", all_user_messages],
     )
+    respond_name_thread.start()
 
     respond_list = []
     just_said = "you go to lex, right?"
-    did_respond_prompt(respond_list, "you go to lex right?", all_user_messages)
-    print(f"DID RESPOND: {respond_list[0]}")
+    did_respond_prompt(respond_list, "you go to lex, right?", all_user_messages)
+    print(f"DID RESPOND TO MAIN QUESTION: {respond_list[0]}")
+    respond_name_thread.join()
+
+    print("DID RESPOND DO YOUR NAME QUESTION")
+    print(respond_name_list[0])
+
+    # Skip asking name step if the current step already asks name
+    if respond_name_list[0] == "yes":
+        metadata["known_name"] = True
     if respond_list[0] == "no":
-        return True, [final_message]
+        if respond_name_list[0] == "yes":
+            metadata_copy = deepcopy(metadata)
+            metadata_copy["step"] += 1
+            return True, [
+                Message(
+                    "any good plans today?", "ai", session_id, metadata=metadata_copy
+                )
+            ]
+        else:
+            return True, [
+                Message(
+                    "anyways, what's your name?", "ai", session_id, metadata=metadata
+                )
+            ]
 
     additional_ask_list = []
     ask_thread = threading.Thread(
@@ -177,15 +203,28 @@ def send_second_message(
         )
 
     starting_arr = [first_message, second_message]
+    final_message = Message(
+        "anyways, what's your name?", "ai", session_id, metadata=metadata
+    )
     if third_message is not None:
         starting_arr = starting_arr + [third_message]
-    if not metadata["is_lex"]:
+    if not metadata["is_lex"] and not metadata.get("known_name", False):
         starting_arr += [final_message]
+    if not metadata["is_lex"] and metadata.get("known_name", False):
+        metadata_copy = deepcopy(metadata)
+        metadata_copy["step"] += 1
+        starting_arr += [
+            Message("any good plans today?", "ai", session_id, metadata=metadata_copy)
+        ]
     ask_thread.join()
 
     should_continue_conv = additional_ask_list[0]
 
     return should_continue_conv, starting_arr
+
+
+def is_name_known(prev_messages: List[Message]):
+    return any([message.metadata.get("known_name", False) for message in prev_messages])
 
 
 def send_lex_third_message(
@@ -195,10 +234,12 @@ def send_lex_third_message(
     user_messages: List[Message],
     curr_message: Message,
 ) -> Tuple[bool, List[Message]]:
+    known_name = is_name_known(prev_messages)
     metadata = {
         "step": step,
         "is_first_conversation": True,
         "is_lex": is_from_lex(prev_messages),
+        "known_name": known_name,
     }
     all_user_messages = user_messages + [curr_message]
 
@@ -216,6 +257,13 @@ def send_lex_third_message(
     final_message = Message(
         "anyways, what's your name?", "ai", session_id, metadata=metadata
     )
+    if known_name:
+        metadata_copy = deepcopy(metadata)
+        metadata_copy["step"] += 1
+        final_message = [
+            Message("any good plans today?", "ai", session_id, metadata=metadata_copy)
+        ]
+
     if respond_list[0] == "no":
         return True, [final_message]
 
@@ -239,9 +287,7 @@ def send_lex_third_message(
     else:
         return True, [final_message]
 
-
     ask_thread.join()
-
     should_continue_conv = additional_ask_list[0]
 
     return should_continue_conv, [first_message, final_message]
@@ -259,6 +305,7 @@ def send_third_message(
         "is_first_conversation": True,
         "is_lex": is_from_lex(prev_messages),
     }
+
     all_user_messages = user_messages + [curr_message]
     respond_list = []
     just_said = "what's your name?"
