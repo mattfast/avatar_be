@@ -70,6 +70,11 @@ def cookie(data):
     if user.get("email", None) is not None:
         emit("modal", { "provided": True }, room=data["sid"])
 
+    sent = False
+    if user.get("session_id", None) is None:
+        emit("previousMessages", {"messages": []}, room=data["sid"])
+        sent = True
+
     curr_session = Session.from_user(user)
     curr_session.log_to_mongo()
     messages = mongo_read(
@@ -86,7 +91,8 @@ def cookie(data):
         lambda x: {"content": x["content"], "role": x["role"]}, listMessages
     )
     print(extractedMessages)
-    emit("previousMessages", {"messages": list(extractedMessages)}, room=data["sid"])
+    if not sent:
+        emit("previousMessages", {"messages": list(extractedMessages)}, room=data["sid"])
 
 @socketio.on("message", namespace="/chat")
 def handle_message(data):
