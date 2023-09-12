@@ -55,7 +55,7 @@ class Message(MetadataMixIn, MongoMixin):
         return METADATA_MESSAGE_ID_KEY
 
     def modify_metadata_dict(self, metadata: dict) -> dict:
-        metadata[self.metadata_key] = self.message_ids
+        metadata[self.metadata_key] = self.message_id
 
         # Ensure that the entity dict is still maintained
         curr_entity_dict = metadata.get(Entity.metadata_key, None)
