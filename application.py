@@ -66,6 +66,14 @@ def cookie(data):
     if user.get("user_id", None) is None:
         id = str(uuid4())
         mongo_upsert("Users", {"cookie": data["cookie"]}, {"user_id": id})
+    
+    if user.get("email", None) is not None:
+        emit("modal", { "provided": True }, room=data["sid"])
+
+    sent = False
+    if user.get("session_id", None) is None:
+        emit("previousMessages", {"messages": []}, room=data["sid"])
+        sent = True
 
     curr_session = Session.from_user(user)
     curr_session.log_to_mongo()
@@ -83,8 +91,8 @@ def cookie(data):
         lambda x: {"content": x["content"], "role": x["role"]}, listMessages
     )
     print(extractedMessages)
-    emit("previousMessages", {"messages": list(extractedMessages)})
-
+    if not sent:
+        emit("previousMessages", {"messages": list(extractedMessages)}, room=data["sid"])
 
 @socketio.on("message", namespace="/chat")
 def handle_message(data):
@@ -128,8 +136,10 @@ def handle_email(data):
         data is None
         or data["cookie"] is None
         or data["email"] is None
+        or data["sid"] is None
         or data["cookie"] == ""
         or data["email"] == ""
+        or data["sid"] == ""
     ):
         print("DATA NOT FORMATTED CORRECTLY")
         return
@@ -138,6 +148,7 @@ def handle_email(data):
     print(data)
     insertion_dict = {"cookie": data["cookie"], "email": data["email"]}
     mongo_upsert("Users", {"cookie": data["cookie"]}, insertion_dict)
+    emit("modal", { "provided": True }, room=data["sid"])
 
 
 @socketio.on("phone", namespace="/chat")
