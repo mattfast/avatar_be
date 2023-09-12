@@ -1,7 +1,13 @@
+from random import random
+
+from langchain.chat_models.openai import ChatOpenAI
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.llms.openai import OpenAI
 from langchain.schema import SystemMessage
 
 from common.prompt import Prompt
 from constants import MODEL_DICT, chat_models_set
+from keys import openai_api_key, secondopenai_api_key
 
 
 def clean_response(result: str) -> str:
@@ -34,4 +40,12 @@ def run_chat_prompt(prompt: str, verbose: bool = False, model: str = "chat", **k
     messages_to_use.append(system_message)
     if verbose:
         print(messages_to_use)
+
+    if "4" in model:
+        val = random()
+        key_to_use = openai_api_key
+        if val > 0.8:
+            key_to_use = secondopenai_api_key
+        MODEL_DICT[model].openai_api_key = key_to_use
+
     return clean_response(MODEL_DICT[model](messages_to_use).content)
