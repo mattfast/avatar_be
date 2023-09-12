@@ -1,8 +1,15 @@
+from random import random
+
 from langchain.chat_models.openai import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.llms.openai import OpenAI
 
-from keys import openai_api_key
+from keys import openai_api_key, secondopenai_api_key
+
+val = random()
+key_to_use = openai_api_key
+if val > 0.8:
+    key_to_use = secondopenai_api_key
 
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 
@@ -18,12 +25,10 @@ old_chat_model = ChatOpenAI(
 simple_model = OpenAI(
     model="text-babbage-001", temperature=0, openai_api_key=openai_api_key
 )
-gpt_4_model = ChatOpenAI(
-    temperature=0.2, model_name="gpt-4", openai_api_key=openai_api_key
-)
 
+gpt_4_model = ChatOpenAI(temperature=0.2, model_name="gpt-4", openai_api_key=key_to_use)
 old_gpt_4_model = ChatOpenAI(
-    temperature=0.2, model_name="gpt-4-0314", openai_api_key=openai_api_key
+    temperature=0.2, model_name="gpt-4-0314", openai_api_key=key_to_use
 )
 
 chat_models_set = {"chat", "gpt-4", "old_chat", "old_gpt4"}

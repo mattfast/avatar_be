@@ -88,7 +88,6 @@ class Session(MetadataMixIn, MongoMixin):
 
     @classmethod
     def from_user(cls, user):
-        print("Creating Session from User Info")
         user_name = user.get("name", None)
         session_id = user.get("session_id", None)
         print("CURR SESSION ID")
@@ -97,9 +96,6 @@ class Session(MetadataMixIn, MongoMixin):
         if session_id is None:
             return Session(user, is_first_conversation=True)
         session = mongo_read("Session", {"session_id": session_id})
-
-        print("SESSION RETRIEVED")
-        print(session)
 
         if session is None:
             print("CREATING NEW SESSION")
@@ -150,11 +146,6 @@ class Session(MetadataMixIn, MongoMixin):
         is_first_conversation = len(last_messages) == 0 or last_messages[
             -1
         ].metadata.get("is_first_conversation", False)
-        print("REACHED OAINSDOIASNDOIN")
-        print(is_first_conversation)
-        for message in last_messages:
-            print(message.content)
-            print(message.role)
         return cls(
             user,
             is_first_conversation,
@@ -181,22 +172,19 @@ class Session(MetadataMixIn, MongoMixin):
 
     def extract_and_process_entities(self, message: str) -> List[Entity]:
         """Extract and process entities."""
-        print(message)
         texts = self.format_recent_user_messages() + f"{message}\n"
         raw_entity_output = compile_and_run_prompt(
             ProperNounExtractionPrompt,
             {"texts": texts},
         )
 
-        print("RAW ENTITY OUTPUT")
-        print(raw_entity_output)
         entity_list = []
         entities = clean_json_list_output(raw_entity_output)
 
         # Only choose top 5 entities. Can Choose Custom Sorting Algorithm
         # in the future
         entities = entities[:4]
-        print(entities)
+        # print(entities)
         for name in entities:
             entity_name = find_entity_name(name, self.user["user_id"])
             # No entity found, create new one
@@ -222,8 +210,7 @@ class Session(MetadataMixIn, MongoMixin):
         from_lex = (
             False if ai_message is None else ai_message.metadata.get("is_lex", False)
         )
-        print("CURR STEP")
-        print(curr_step)
+
         if not from_lex:
             func = FIRST_CONVO_STEP_MAP.get(curr_step, None)
         else:
@@ -429,7 +416,7 @@ class Session(MetadataMixIn, MongoMixin):
             },
             messages=deepcopy(message_list),
         ).lower()
-        print(chat_response)
+        # print(chat_response)
 
         ai_message = Message(chat_response, "ai", self.session_id)
         return [ai_message] + ending_messages
@@ -439,8 +426,8 @@ class Session(MetadataMixIn, MongoMixin):
         # TODO: Only sending one message rn, so doesn't matter. But should
         last_message = ai_messages[0]
         last_message.content = ". ".join([message.content for message in ai_messages])
-        print("LAST MESSAGE")
-        print(last_message.content)
+        # print("LAST MESSAGE")
+        # print(last_message.content)
         if not self.is_first_conversation:
             update_thread = threading.Thread(
                 target=self.async_update_chat_info,
@@ -456,11 +443,11 @@ class Session(MetadataMixIn, MongoMixin):
         self.log_to_mongo()
 
     def get_last_ai_message(self) -> Optional[Message]:
-        print("GETTING LAST AI MESSAGE")
+        # print("GETTING LAST AI MESSAGE")
         for message in self.prev_messages[::-1]:
             if message.role == "ai":
                 return message
-        print("RETURNING NONE")
+        # print("RETURNING NONE")
         return None
 
     def process_interaction_as_memory(self) -> None:
@@ -482,7 +469,6 @@ class Session(MetadataMixIn, MongoMixin):
             },
         )
         should_save = is_important_memory.split(":")[0].strip()
-        print(should_save)
 
         # If not meant to save, then don't
         if "YES" not in should_save:
@@ -519,9 +505,6 @@ class Session(MetadataMixIn, MongoMixin):
 
         # Add Entity and Message Information
         memory_metadata.add(last_user_message)
-        print("MESSAGE ENTITIES")
-        print(last_user_message.entities)
-        print(memory_metadata)
 
         # TODO: More integrated process of saving info about a message
 

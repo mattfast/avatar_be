@@ -135,11 +135,11 @@ def send_second_message(
     respond_list = []
     just_said = "you go to lex, right?"
     did_respond_prompt(respond_list, "you go to lex, right?", all_user_messages)
-    print(f"DID RESPOND TO MAIN QUESTION: {respond_list[0]}")
+    # print(f"DID RESPOND TO MAIN QUESTION: {respond_list[0]}")
     respond_name_thread.join()
 
-    print("DID RESPOND DO YOUR NAME QUESTION")
-    print(respond_name_list[0])
+    # print("DID RESPOND DO YOUR NAME QUESTION")
+    # print(respond_name_list[0])
 
     # Skip asking name step if the current step already asks name
     if respond_name_list[0] == "yes":
@@ -254,7 +254,7 @@ def send_lex_third_message(
 
     respond_list = []
     did_respond_prompt(respond_list, last_ai_message.content, all_user_messages)
-    print(f"DID RESPOND: {respond_list[0]}")
+    # print(f"DID RESPOND: {respond_list[0]}")
     final_message = Message(
         "anyways, what's your name?", "ai", session_id, metadata=metadata
     )
@@ -316,7 +316,7 @@ def send_third_message(
     )
     ask_thread.start()
     did_respond_prompt(respond_list, just_said, all_user_messages)
-    print(f"DID RESPOND: {respond_list[0]}")
+    # print(f"DID RESPOND: {respond_list[0]}")
 
     second_message = Message(
         "any good plans today?", "ai", session_id, metadata=metadata
@@ -400,7 +400,7 @@ def send_fourth_message(
     respond_thread.start()
     respond_thread.join()
     ask_thread.join()
-    print(f"DID RESPOND: {responded_list[0]}")
+    # print(f"DID RESPOND: {responded_list[0]}")
 
     final_message = Message(
         "anyways, are u a dog or a cat person?", "ai", session_id, metadata=metadata
@@ -476,10 +476,15 @@ def send_fifth_message(
             break_id = i
             break
 
+    additional_ask_list = []
+    ask_thread = threading.Thread(
+        target=asked_questions_prompt, args=[additional_ask_list, all_user_messages]
+    )
+    ask_thread.start()
+
     ai_initiations = ". ".join(
         [message.content for message in prev_messages[break_id:]]
     )
-    print(ai_initiations)
     res_messages_str = ". ".join(
         [message.content for message in (user_messages + [curr_message])]
     )
@@ -505,7 +510,6 @@ def send_fifth_message(
                 ),
             },
         ).lower()
-        print(which_one)
         if "yes" in which_one:
             tag = "dog"
         else:
@@ -530,8 +534,6 @@ def send_fifth_message(
         )
         first_message = Message(funny_res, "ai", session_id, metadata=metadata)
 
-    print("TAGGGGG")
-    print(tag)
     tiktoks = list(mongo_read("TikToks", {"tags": tag}, find_many=True))
     tiktok = random.choice(tiktoks)
     author = tiktok["author"]
@@ -547,7 +549,15 @@ def send_fifth_message(
     final_message = Message(
         "btw, what kind of music do you like?", "ai", session_id, metadata=metadata
     )
-    return False, [first_message, ai_tiktok_preface, ai_tiktok_url, final_message]
+
+    ask_thread.join()
+
+    return additional_ask_list[0], [
+        first_message,
+        ai_tiktok_preface,
+        ai_tiktok_url,
+        final_message,
+    ]
 
 
 # Send out music rec
@@ -571,7 +581,7 @@ def send_sixth_message(
         "btw, what kind of music do you like?",
         all_user_messages,
     )
-    print(f"DID RESPOND: {responded_list[0]}")
+    # print(f"DID RESPOND: {responded_list[0]}")
 
     continue_conversation = False
     if responded_list[0] == "no":

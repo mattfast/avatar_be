@@ -66,9 +66,9 @@ def cookie(data):
     if user.get("user_id", None) is None:
         id = str(uuid4())
         mongo_upsert("Users", {"cookie": data["cookie"]}, {"user_id": id})
-    
+
     if user.get("email", None) is not None:
-        emit("modal", { "provided": True }, room=data["sid"])
+        emit("modal", {"provided": True}, room=data["sid"])
 
     sent = False
     if user.get("session_id", None) is None:
@@ -92,7 +92,10 @@ def cookie(data):
     )
     print(extractedMessages)
     if not sent:
-        emit("previousMessages", {"messages": list(extractedMessages)}, room=data["sid"])
+        emit(
+            "previousMessages", {"messages": list(extractedMessages)}, room=data["sid"]
+        )
+
 
 @socketio.on("message", namespace="/chat")
 def handle_message(data):
@@ -148,7 +151,7 @@ def handle_email(data):
     print(data)
     insertion_dict = {"cookie": data["cookie"], "email": data["email"]}
     mongo_upsert("Users", {"cookie": data["cookie"]}, insertion_dict)
-    emit("modal", { "provided": True }, room=data["sid"])
+    emit("modal", {"provided": True}, room=data["sid"])
 
 
 @socketio.on("phone", namespace="/chat")

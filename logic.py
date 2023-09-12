@@ -18,14 +18,14 @@ MAX_WAIT_TIME_SECS = 5
 def talk(user, new_message, is_check=False, send_ws=False):
     """Talk with a specific player."""
     print("USER")
-    print(user)
+    # print(user)
     print("USER NUMBER")
     user_num = user["number"]
     user_sid = user.get("sid", None)
-    print(user_num)
-
-    print("NEW MESSAGE")
-    print(new_message)
+    # print(user_num)
+    #
+    # print("NEW MESSAGE")
+    # print(new_message)
 
     # If no user id, then create one before getting a session
     if user.get("user_id", None) is None:
@@ -59,15 +59,16 @@ def talk(user, new_message, is_check=False, send_ws=False):
     messages = mongo_read(
         "Messages", {"session_id": curr_session.session_id}, find_many=True
     )
+
+    user_now = mongo_read("Users", {"user_id": user["user_id"]})
+    if user_now.get("session_id", None) != curr_session.session_id:
+        return [], True
     last_message = None
 
     # Get Newest Message
     for message in messages.sort("created_time", -1):
         last_message = message
         break
-
-    print(last_message_id)
-    print(last_message)
 
     if (
         last_message is None
