@@ -14,6 +14,7 @@ from conversation.first_conversation.prompts.responses import (
     RespondedPrompt,
     SayYesPrompt,
     TriagePrompt,
+    WhichOnePrompt,
 )
 from conversation.message import Message, message_list_to_convo_prompt
 from dbs.mongo import mongo_read
@@ -493,7 +494,22 @@ def send_fifth_message(
         message.as_langchain_message()
         for message in prev_messages[break_id:] + all_user_messages
     ]
+    tag = "Pets and Animals"
     if say_yes_list[0]:
+        which_one = compile_and_run_prompt(
+            WhichOnePrompt,
+            {
+                "said": ai_initiations,
+                "message": "AND SAID ".join(
+                    [f'"{message.content}"' for message in all_user_messages]
+                ),
+            },
+        ).lower()
+        print(which_one)
+        if "yes" in which_one:
+            tag = "dog"
+        else:
+            tag = "cat"
         first_message = Message("same haha", "ai", session_id, metadata=metadata)
     else:
         response_template = 'short, funny response about their dislike of dogs and cats. phrased as "guess you\'re more of a [fill in response]" no longer than 6 words.'
@@ -514,7 +530,9 @@ def send_fifth_message(
         )
         first_message = Message(funny_res, "ai", session_id, metadata=metadata)
 
-    tiktoks = list(mongo_read("TikToks", {"tags": "Pets and Animals"}, find_many=True))
+    print("TAGGGGG")
+    print(tag)
+    tiktoks = list(mongo_read("TikToks", {"tags": tag}, find_many=True))
     tiktok = random.choice(tiktoks)
     author = tiktok["author"]
     videoId = tiktok["videoId"]

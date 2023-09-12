@@ -255,8 +255,8 @@ class Session(MetadataMixIn, MongoMixin):
             run_general, messages_to_ret = self.continue_first_conversation(
                 user_message
             )
-            self.user_messages += [user_message]
             if not run_general:
+                self.user_messages += [user_message]
                 return messages_to_ret
 
         emotions_list = []

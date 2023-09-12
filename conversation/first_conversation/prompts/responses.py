@@ -66,7 +66,7 @@ class AskingAboutMePrompt(Prompt):
 
 Your friend just said: {message}.
 
-Determine if the message is asking about you (the speaker). Output YES/NO: reason for decision.
+Determine if the message is asking about you (the speaker). They do not need to use question marks, just need to be asking about you, either casually or not. Output YES/NO: reason for decision.
 
 Output:
 """
@@ -75,7 +75,7 @@ Output:
 class PreferredResponseTemplate(Prompt):
     name = "PreferredResponseTemplate"
     verbose = True
-    model = "gpt-4"
+    model = "old_gpt4"
     version = "0.0.1"
     template = """You are {self_name}. You are having a conversation with your friend.
 
@@ -113,6 +113,23 @@ Could your friends response in any way answer yes to the question you asked?
 Only output NO if they explictly said NO. Output YES in all other cases. Output YES/NO: reason for decision.
 
 Now decide:
+"""
+
+
+class WhichOnePrompt(Prompt):
+    name = "WhichOnePrompt"
+    verbose = True
+    version = "0.0.1"
+    template = """You are having a conversation with a friend.
+
+You just said: {said}
+Your friend responded: {message}
+
+Based on your friends response, does your friend like dogs more than cats?
+
+Output YES/NO: reason for decision
+
+Output:
 """
 
 
