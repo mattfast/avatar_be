@@ -62,7 +62,7 @@ class Session(MetadataMixIn, MongoMixin):
     def __init__(
         self,
         user,
-        is_first_conversation: bool = True,
+        is_first_conversation: bool = False,
         session_id: Optional[str] = None,
         messages: Optional[List[Message]] = None,
         session_info: Optional[dict] = None,
@@ -70,7 +70,7 @@ class Session(MetadataMixIn, MongoMixin):
         last_message_sent: Optional[datetime] = None,
     ):
         self.user = user
-        self.is_first_conversation = is_first_conversation
+        self.is_first_conversation = False
         self.session_id = session_id or str(uuid4())
         self.prev_messages, self.user_messages = partition_prev_messages(messages)
         self.session_info = session_info or default_ai_session_info
