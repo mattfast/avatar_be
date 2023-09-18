@@ -1,6 +1,5 @@
 from users import create_user, get_user
 
-
 def login(number, is_cookie=False):
     user = get_user(number, is_cookie=is_cookie)
     is_first = user is None
