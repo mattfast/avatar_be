@@ -13,7 +13,7 @@ from auth import login
 from dbs.mongo import mongo_read, mongo_upsert, mongo_write
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from logic import talk
-from users import get_user
+from users import get_user, get_top_users
 from messaging import send_message
 
 # import uuid
@@ -62,7 +62,7 @@ def generate_auth(data):
     )
 
     # sends text message w search param
-    url = f"https://dopple.club/q={search_param}"
+    url = f"https://dopple.club/?q={search_param}"
     send_message(f"Hey! Here's your login link for dopple.club: {url}", number)
     
     return "generated search param", 200
@@ -99,8 +99,15 @@ def verify_auth(data):
     return { "cookie": cookie }, 200
 
 @app.route("/generate-feed", methods=["GET"])
-def generate_feed():
+def generate_feed(data):
     # login
+    cookie = data.get("cookie", None)
+    if data is None or cookie is None:
+        return "cookie missing", 400
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
 
     # retrieve profiles already voted
 
@@ -109,11 +116,41 @@ def generate_feed():
     return ""
 
 @app.route("/post-decision", methods=["POST"])
-def post_decision():
+def post_decision(data):
 
     # login
+    cookie = data.get("cookie", None)
+    if data is None or cookie is None:
+        return "cookie missing", 400
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+    
+    # validate data
+    winner_id = data.get("winner_id", None)
+    loser_id = data.get("loser_id", None)
+    if winner_id is None or loser_id is None:
+        return "data invalid", 400
 
     # write to votes table in mongo
+    # TODO: modularize into thread
+    mongo_write(
+        "Votes",
+        {
+            "voter_id": user.get("user_id", None),
+            "winner_id": winner_id,
+            "loser_id": loser_id,
+            "created_at": datetime.now()
+        }
+    )
+
+    winner = mongo_read("Users", { "user_id": winner_id })
+    mongo_upsert(
+        "Users",
+        { "user_id": winner_id },
+        { "votes": winner.get("votes", 0) + 1 }
+    )
 
     return "posted", 200
 
@@ -124,32 +161,70 @@ def send_texts():
 
     return ""
 
-@app.route("/create-update-user", methods=["POST"])
-def create_update_user():
-
-    # check for cookie
+@app.route("/create-user", methods=["POST"])
+def create_user(data):
 
     # if exists: retrieve user + update
     # if doesn't exist: instantiate user obj
     return ""
 
-@app.route("/get-leaderboard", methods=["GET"])
-def get_leaderboard():
-
-    # retrieve votes + calculate leaderboard
-
-    return ""
-
-@app.route("/profile", methods=["GET"])
-def profile():
+@app.route("/create-update-user", methods=["POST"])
+def update_user(data):
 
     # login
 
+    return ""
+
+@app.route("/get-leaderboard", methods=["GET"])
+def get_leaderboard(data):
+
+    # login
+    cookie = data.get("cookie", None)
+    if data is None or cookie is None:
+        return "cookie missing", 400
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+
+    # retrieve votes + calculate leaderboard
+    leaderboard = get_top_users()
+
+    return { leaderboard }, 200
+
+@app.route("/profile", methods=["GET"])
+def profile(data):
+
+    # login
+    cookie = data.get("cookie", None)
+    if data is None or cookie is None:
+        return "cookie missing", 400
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+
     # retrieve user profile
+    user_id = data.get("user_id", None)
+    if user_id is None:
+        return "user id missing", 400
+
+    profile = mongo_read("Users", { "user_id": user_id })
+    if profile is None:
+        return "profile not found", 404
 
     # log profile view
+    # TODO: modularize into thread
+    mongo_write(
+        "ProfileViews",
+        {
+            "viewer_id": user.get("user_id", None),
+            "profile_id": user_id,
+            "created_at": datetime.now()
+        }
+    )
 
-    return ""
+    return { profile }, 200
 
 
 ## CHECK METHODS

@@ -77,6 +77,24 @@ def mongo_read(collection, filter, find_many: bool = False):
 
     return result
 
+def mongo_read_sort(collection, filter, sortFilter, limit=None):
+
+    try:
+        print("ABOUT TO FIND RESULT")
+        print(mongo_db)
+        print(mongo_db[collection])
+        if limit is not None:
+            result = mongo_db[collection].find(filter).sort(sortFilter).limit(limit)
+        else:
+            result = mongo_db[collection].find(filter).sort(sortFilter)
+        print("FOUND RESULT")
+    except pymongo.errors.OperationFailure:
+        print("MONGO READ ERROR")
+        print(f"Collection: {collection}")
+        print(f"Filter: {filter}")
+        result = None
+
+    return result
 
 def mongo_count(collection, query=None):
     try:
