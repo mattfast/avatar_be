@@ -3,6 +3,7 @@ import threading
 import time
 from uuid import uuid4
 from datetime import datetime
+from random import shuffle
 
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -12,7 +13,6 @@ from twilio.twiml.messaging_response import MessagingResponse
 from auth import login
 from dbs.mongo import mongo_read, mongo_upsert, mongo_write
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
-from logic import talk
 from users import get_user, get_top_users
 from messaging import send_message
 
@@ -34,9 +34,10 @@ socketio = SocketIO(
 )
 
 @app.route("/generate-auth", methods=["POST"])
-def generate_auth(data):
+def generate_auth():
 
     # check request format
+    data = request.json
     number = data.get("number", None)
     if data is None or number is None:
         return "number missing", 400
@@ -68,9 +69,10 @@ def generate_auth(data):
     return "generated search param", 200
 
 @app.route("/verify-auth", methods=["POST"])
-def verify_auth(data):
+def verify_auth():
 
     # check request format
+    data = request.json
     search_param = data.get("search_param", None)
     if data is None or search_param is None:
         return "search_param missing", 400
@@ -99,28 +101,41 @@ def verify_auth(data):
     return { "cookie": cookie }, 200
 
 @app.route("/generate-feed", methods=["GET"])
-def generate_feed(data):
+def generate_feed():
     # login
-    cookie = data.get("cookie", None)
-    if data is None or cookie is None:
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
         return "cookie missing", 400
     
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
+    
+    user_id = user.get("user_id", None)
+    if user_id is None:
+        return "search param db entry invalid", 500
 
     # retrieve profiles already voted
+    votes = mongo_read("Votes", { "decider_id": user_id }, find_many=True)
 
     # return feed w/ profiles not voted
+    voted_on = [user_id]
+    for v in votes:
+        voted_on.append(v.get("winner_id", None))
+        voted_on.append(v.get("loser_id", None))
 
-    return ""
+    users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on } }, find_many=True)
+    users_list = list(users_not_voted)
+    shuffle(users_list)
+
+    return { "user_list": users_list[:24], "is_final": len(users_list) < 24 }, 200
 
 @app.route("/post-decision", methods=["POST"])
-def post_decision(data):
+def post_decision():
 
     # login
-    cookie = data.get("cookie", None)
-    if data is None or cookie is None:
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
         return "cookie missing", 400
     
     user = get_user(cookie)
@@ -128,9 +143,10 @@ def post_decision(data):
         return "user invalid", 401
     
     # validate data
+    data = request.json
     winner_id = data.get("winner_id", None)
     loser_id = data.get("loser_id", None)
-    if winner_id is None or loser_id is None:
+    if data is None or winner_id is None or loser_id is None:
         return "data invalid", 400
 
     # write to votes table in mongo
@@ -162,25 +178,67 @@ def send_texts():
     return ""
 
 @app.route("/create-user", methods=["POST"])
-def create_user(data):
+def create_user():
 
-    # if exists: retrieve user + update
-    # if doesn't exist: instantiate user obj
-    return ""
+    # check request format
+    data = request.json
+    number = data.get("number", None)
+    if data is None or number is None:
+        return "number missing", 400
+    
+    # check for existing user
+    existing_user = mongo_read("Users", { "number": number })
+    if existing_user is not None:
+        return "user with number already exists", 400
+    
+    # create new user
+    user_id = str(uuid4())
+    mongo_write(
+        "Users",
+        {
+            "user_id": user_id,
+            "number": number,
+            "created_at": datetime.now(),
+        }
+    )
 
-@app.route("/create-update-user", methods=["POST"])
-def update_user(data):
+    # returns new cookie
+    cookie = str(uuid4())
+    mongo_write(
+        "Cookies",
+        {
+            "cookie": cookie,
+            "user_id": user_id,
+            "created_at": datetime.now(),
+        }
+    )
 
+    return { "cookie": cookie }, 200
+
+@app.route("/update-user", methods=["POST"])
+def update_user():
     # login
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
+        return "cookie missing", 400
 
-    return ""
+    # check for existing user
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+    
+    # insert new data
+    data = request.json
+    mongo_upsert("Users", { "user_id": user.get("user_id", None) }, data)
+
+    return "success", 200
 
 @app.route("/get-leaderboard", methods=["GET"])
-def get_leaderboard(data):
+def get_leaderboard():
 
     # login
-    cookie = data.get("cookie", None)
-    if data is None or cookie is None:
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
         return "cookie missing", 400
     
     user = get_user(cookie)
@@ -193,11 +251,11 @@ def get_leaderboard(data):
     return { leaderboard }, 200
 
 @app.route("/profile", methods=["GET"])
-def profile(data):
+def profile():
 
     # login
-    cookie = data.get("cookie", None)
-    if data is None or cookie is None:
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
         return "cookie missing", 400
     
     user = get_user(cookie)
@@ -205,8 +263,9 @@ def profile(data):
         return "user invalid", 401
 
     # retrieve user profile
+    data = request.json
     user_id = data.get("user_id", None)
-    if user_id is None:
+    if data is None or user_id is None:
         return "user id missing", 400
 
     profile = mongo_read("Users", { "user_id": user_id })

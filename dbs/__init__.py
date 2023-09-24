@@ -4,7 +4,7 @@ import certifi
 import pinecone
 import pymongo
 
-from keys import mongo_key, pinecone_key
+from keys import mongo_key
 
 # init mongodb
 print(mongo_key)
@@ -19,11 +19,4 @@ except pymongo.errors.ConfigurationError:
 else:
     print("MONGO CLIENT")
     print(client)
-mongo_db = client["Prod"]
-
-
-# init pinecone db
-pinecone.init(api_key=pinecone_key, environment="asia-southeast1-gcp-free")
-pinecone_index = pinecone.Index("test-index")
-print("PINECONE INDEX")
-print(pinecone_index)
+mongo_db = client["DoppleProd"]
