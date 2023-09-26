@@ -44,10 +44,10 @@ def generate_auth():
 
     # get and verify user
     user = get_user(number, is_number=True)
-    user_id = user.get("user_id", None)
     if user is None:
         return "phone number incorrect", 401
-    
+
+    user_id = user.get("user_id", None)
     if user_id is None:
         return "user db entry faulty", 500
 
@@ -64,7 +64,7 @@ def generate_auth():
 
     # sends text message w search param
     url = f"https://dopple.club/?q={search_param}"
-    send_message(f"Hey! Here's your login link for dopple.club: {url}", number)
+    send_message(f"Hey! Here's your login link for dopple.club: {url}", "+1" + number)
     
     return "generated search param", 200
 
@@ -73,8 +73,11 @@ def verify_auth():
 
     # check request format
     data = request.json
+    if data is None:
+        return "data missing", 400
+
     search_param = data.get("search_param", None)
-    if data is None or search_param is None:
+    if search_param is None:
         return "search_param missing", 400
 
     # checks that url search param exists

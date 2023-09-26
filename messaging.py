@@ -16,6 +16,7 @@ sendblue = Sendblue(sendblue_key, sendblue_secret)
 
 
 def send_message(message, number):
+    resp = None
     try:
         if carrier == "TWILIO":
             print(message)
@@ -23,13 +24,13 @@ def send_message(message, number):
             print(twilio_number)
             print(twilio_account_sid)
             print(twilio_key)
-            client.messages.create(
+            resp = client.messages.create(
                 body=message,
                 from_=twilio_number,
                 to=number,
             )
         elif carrier == "SENDBLUE":
-            sendblue.send_message(
+            resp = sendblue.send_message(
                 number,
                 {
                     "content": message,
@@ -39,5 +40,9 @@ def send_message(message, number):
             print("CARRIER NOT RECOGNIZED")
     except:
         print("ERROR SENDING MESSAGE")
+        print(resp)
+        return resp
     else:
         print("successfully sent message")
+        print(resp)
+        return resp
