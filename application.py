@@ -11,13 +11,18 @@ from flask_socketio import SocketIO, emit
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from dbs.mongo import mongo_read, mongo_upsert, mongo_write
+from dbs.mongo import mongo_read, mongo_read_sort, mongo_upsert, mongo_write
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from users import get_user, get_top_users
 from messaging import send_message
 
-# import uuid
-
+text_types = [
+    "viewed",
+    "voted_for",
+    "voted_against",
+    "leaderboard",
+    "total_activity"
+]
 
 app = Flask(__name__)
 CORS(app)
@@ -32,6 +37,10 @@ socketio = SocketIO(
     async_mode="threading",
     transports=["websocket"],
 )
+
+@app.route("/")
+def healthy():
+    return "healthy!"
 
 @app.route("/generate-auth", methods=["POST"])
 def generate_auth():
@@ -173,12 +182,58 @@ def post_decision():
 
     return "posted", 200
 
-@app.route("/send-texts", methods=["POST"])
-def send_texts():
+@app.route("/send-text-blast", methods=["POST"])
+def send_text_blast():
+    lambda_token_header = request.headers.get("lambda-token-header")
 
-    # retrieve all users w/o text in X hrs
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+
+    users = mongo_read("Users", {}, find_many=True)
+
+    if users is None:
+        return "users not found", 500
+
+    for u in users:
+        if u is None:
+            continue
+        num = u.get("number", None)
+        if num is None:
+            continue
+
+        send_message("🚨ALERT🚨 Your dopple is ready to view. Look here to see yours and your friends':", "+1" + num)
+        send_message("https://dopple.club/vote", "+1" + num)
+
+    return "text blast sent", 200
+
+"""@app.route("/send-update-texts", methods=["POST"])
+def send_update_texts():
+    lambda_token_header = request.headers.get("lambda-token-header")
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+    
+    users = mongo_read("Users", {}, find_many=True)
+
+    if users is None:
+        return "users not found", 500
+    
+    for u in users:
+        if u is None:
+            continue
+        u_id = u.get("user_id", None)
+        if u_id is None:
+            continue
+
+        texts = mongo_read_sort("TextsSent", { "user_id": u_id }, { "created_at": -1 }, limit=10)
+        now = datetime.now() - 
+        if texts.length == 0 or datetime.datetime(texts[0].get("created_at", None)):
+
+            
+
 
     return ""
+"""
 
 @app.route("/create-user", methods=["POST"])
 def create_user():
@@ -300,16 +355,6 @@ def send_tiktoks_check():
 
     return "tiktok job completed", 200
 
-
-@app.route("/bot-check", methods=["POST"])
-def message_check():
-    checkly_token_header = request.headers.get("checkly-token-header")
-
-    if checkly_token_header != checkly_token:
-        return "checkly token invalid", 401
-
-
-    return "successfully generated", 200
 
 
 
