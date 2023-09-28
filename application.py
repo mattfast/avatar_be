@@ -112,6 +112,99 @@ def verify_auth():
 
     return { "cookie": cookie }, 200
 
+@app.route("/validate-cookie", methods=["POST"])
+def validate_cookie():
+
+    # check request format
+    data = request.json
+    if data is None:
+        return "data missing", 400
+    
+    cookie = data.get("cookie", None)
+    if cookie is None:
+        return "cookie missing", 400
+    
+    cookie = mongo_read(
+        "Cookies",
+        {
+            "cookie": cookie,
+        }
+    )
+
+    if cookie is None:
+        return "cookie invalid", 400
+    
+    return "cookie valid", 200
+
+@app.route("/get-user", methods=["GET"])
+def get_user_route():
+
+    # check request format
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
+        return "cookie missing", 400
+    
+    cookie = mongo_read(
+        "Cookies",
+        {
+            "cookie": cookie,
+        }
+    )
+
+    if cookie is None:
+        return "cookie invalid", 400
+    
+    user_id = cookie.get("user_id", None)
+    if user_id is None:
+        return "cookie not configured properly", 500
+    
+    user = mongo_read(
+        "Users",
+        { 
+            "user_id": user_id
+        }
+    )
+
+    if user is None:
+        return "user not found", 500
+    
+    return {
+        "number": user.get("number", None),
+        "first_name": user.get("first_name", None),
+        "last_name": user.get("last_name", None),
+        "images_uploaded": user.get("images_uploaded", None),
+    }, 200
+
+@app.route("/get-referral-code", methods=["GET"])
+def get_referral_code():
+    # login
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
+        return "cookie missing", 400
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+    
+    user_id = user.get("user_id", None)
+    if user_id is None:
+        return "search param db entry invalid", 500
+    
+    referral_code = mongo_read("ReferralCodes", { "user_id": user_id })
+
+    if referral_code is None:
+        referral_code = str(uuid4())
+        mongo_write("ReferralCodes", {
+            "user_id": user_id,
+            "code": referral_code,
+            "referred_users": [],
+            "created_at": datetime.now()
+        })
+        return { "referral_code": referral_code }, 200
+    
+    return { "referral_code": referral_code.get("code", None) }, 200
+
+
 @app.route("/generate-feed", methods=["GET"])
 def generate_feed():
     # login
@@ -279,6 +372,8 @@ def update_user():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
+    
+    print(cookie)
 
     # check for existing user
     user = get_user(cookie)
