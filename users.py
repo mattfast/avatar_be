@@ -9,6 +9,9 @@ def get_user(token, is_number=False):
         return mongo_read("Users", { "number": token })
     
     cookie = mongo_read("Cookies", { "cookie": token })
+    if cookie is None:
+        return None
+    
     user_id = cookie.get("user_id", None)
 
     if cookie is not None and user_id is not None:

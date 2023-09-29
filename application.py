@@ -2,7 +2,7 @@ import asyncio
 import threading
 import time
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 from random import shuffle
 
 from flask import Flask, Response, request
@@ -11,7 +11,7 @@ from flask_socketio import SocketIO, emit
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from dbs.mongo import mongo_read, mongo_read_sort, mongo_upsert, mongo_write
+from dbs.mongo import mongo_read, mongo_push, mongo_upsert, mongo_write, mongo_read_sort
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from users import get_user, get_top_users
 from messaging import send_message
@@ -124,17 +124,15 @@ def validate_cookie():
     if cookie is None:
         return "cookie missing", 400
     
-    cookie = mongo_read(
-        "Cookies",
-        {
-            "cookie": cookie,
-        }
-    )
+    user = get_user(cookie)
+    if user is None:
+        return "user doesn't exist", 400
 
-    if cookie is None:
-        return "cookie invalid", 400
+    images_uploaded = user.get("images_uploaded", None)
+    if images_uploaded is None:
+        return "user hasn't completed signup", 400
     
-    return "cookie valid", 200
+    return { "user_id": user.get("user_id", None) }, 200
 
 @app.route("/get-user", methods=["GET"])
 def get_user_route():
@@ -172,6 +170,7 @@ def get_user_route():
         "number": user.get("number", None),
         "first_name": user.get("first_name", None),
         "last_name": user.get("last_name", None),
+        "gender": user.get("gender", None),
         "images_uploaded": user.get("images_uploaded", None),
     }, 200
 
@@ -204,10 +203,8 @@ def get_referral_code():
     
     return { "referral_code": referral_code.get("code", None) }, 200
 
-
-@app.route("/generate-feed", methods=["GET"])
-def generate_feed():
-    # login
+@app.route("/confirm-referral", methods=["POST"])
+def confirm_referral():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
@@ -216,24 +213,109 @@ def generate_feed():
     if user is None:
         return "user invalid", 401
     
+    # check request format
+    data = request.json
+    if data is None:
+        return "data missing", 400
+    
+    referral_code = data.get("referral_code", None)
+    if referral_code is None:
+        return "referral_code missing", 400
+    
+    # add users to referred users in table
+    mongo_push("ReferralCodes", { "code": referral_code }, { "referred_users": user.get("user_id", None)})
+
+    # check if other user was waiting to access feed
+    ref_code_db = mongo_read("ReferralCodes", { "code": referral_code })
+    other_id = ref_code_db.get("user_id", None)
+
+    if other_id is not None:
+        user = mongo_read("Users", { "user_id": other_id })
+
+        avail_time = user.get("feed_available_at", None)
+        if avail_time is not None:
+            then = datetime(avail_time)
+            now = datetime.now()
+
+            # if so: 1. text them, 2. update feed_available
+            if then > now:
+                send_message("A friend signed up with your referral code! Your voting feed is available again: https://dopple.club/vote", "+1" + user.get("number", None))
+                mongo_upsert("Users", { "user_id": other_id }, { "feed_available_at": datetime.now() })
+
+    return "success", 200
+
+
+@app.route("/generate-feed", methods=["GET"])
+def generate_feed():
+    # login
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
+        return "cookie missing", 400
+    
+    print("here1")
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+    
+    print("here2")
+    
     user_id = user.get("user_id", None)
     if user_id is None:
         return "search param db entry invalid", 500
+    
+    print("here3")
+    
+    # check if it's too soon to view feed again
+    feed_available_at = user.get("feed_available_at", None)
+    now = datetime.now()
 
-    # retrieve profiles already voted
+    print(feed_available_at)
+    print(now)
+    if feed_available_at is not None and feed_available_at > now:
+        return { "user_list": [], "ready_at": feed_available_at, "is_final": False }, 200
+    
+    print("here4")
+    
+    # if feed has already been generated, return it
+    feed = user.get("feed", None)
+    feed_index = user.get("feed_index", 0)
+
+    print("FEED")
+    print(feed)
+    print("FEED INDEX")
+    print(feed_index)
+    if feed is not None and len(feed) > 0:
+        return { "user_list": feed, "feed_index": feed_index }, 200
+    
+    print("here5")
+
+    # GENERATE FEED
+    # retrieve existing votes
     votes = mongo_read("Votes", { "decider_id": user_id }, find_many=True)
-
-    # return feed w/ profiles not voted
-    voted_on = [user_id]
+    voted_on = [str(user_id)]
     for v in votes:
-        voted_on.append(v.get("winner_id", None))
-        voted_on.append(v.get("loser_id", None))
+        voted_on.append(str(v.get("winner_id", "")))
+        voted_on.append(str(v.get("loser_id", "")))
 
-    users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on } }, find_many=True)
+    print("here6")
+
+    # find users not voted on yet
+    users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on }, "images_uploaded": { "$eq": True } }, find_many=True)
     users_list = list(users_not_voted)
-    shuffle(users_list)
+    users_list_mapped = list(map(lambda u: u.get("user_id", ""), users_list))
+    print(users_list_mapped)
+    shuffle(users_list_mapped)
 
-    return { "user_list": users_list[:24], "is_final": len(users_list) < 24 }, 200
+    print("here7")
+
+    # update user with new info
+    feed = users_list_mapped[:24]
+    mongo_upsert("Users", { "user_id": user_id }, { "feed": feed, "feed_index": 0 })
+
+    print("here8")
+
+    return { "user_list": feed, "feed_index": 0 }, 200
 
 @app.route("/post-decision", methods=["POST"])
 def post_decision():
@@ -255,7 +337,6 @@ def post_decision():
         return "data invalid", 400
 
     # write to votes table in mongo
-    # TODO: modularize into thread
     mongo_write(
         "Votes",
         {
@@ -266,12 +347,23 @@ def post_decision():
         }
     )
 
+    # update winners' table
     winner = mongo_read("Users", { "user_id": winner_id })
     mongo_upsert(
         "Users",
         { "user_id": winner_id },
         { "votes": winner.get("votes", 0) + 1 }
     )
+
+    # update feed_index (and feed_available_at + notified_about_feed if necessary)
+    feed_index = user.get("feed_index", 0)
+    feed_index += 2
+    if feed_index >= 23:
+        now = datetime.now()
+        future_time = now + timedelta(minutes=40)
+        mongo_upsert("Users", { "user_id": user.get("user_id", "") }, { "feed": [], "notified_about_feed": False, "feed_available_at": future_time })
+    else:
+        mongo_upsert("Users", { "user_id": user.get("user_id", "") }, { "feed_index": feed_index })
 
     return "posted", 200
 
@@ -299,7 +391,32 @@ def send_text_blast():
 
     return "text blast sent", 200
 
-"""@app.route("/send-update-texts", methods=["POST"])
+@app.route("/send-feed-texts", methods=["POST"])
+def send_feed_texts():
+    lambda_token_header = request.headers.get("lambda-token-header")
+
+    if lambda_token_header != lambda_token:
+        return "lambda token invalid", 401
+    
+    users = mongo_read("Users", {}, find_many=True)
+
+    if users is None:
+        return "users not found", 500
+
+    now = datetime.now()
+    for u in users:
+        if u is None:
+            continue
+        feed_available_at = u.get("feed_available_at", None)
+        notified_about_feed = u.get("notified_about_feed", None)
+        if feed_available_at is not None and not notified_about_feed:
+            if feed_available_at < now:
+                send_message("Your feed is ready again! Check out some more profiles: https://dopple.club/vote", "+1" + u.get("number", ""))
+                mongo_upsert("Users", { "user_id": u.get("user_id", None) }, { "notified_about_feed": True })
+
+    return "success", 200
+
+"""@app.route("/send-digest-texts", methods=["POST"])
 def send_update_texts():
     lambda_token_header = request.headers.get("lambda-token-header")
 
@@ -449,6 +566,12 @@ def send_tiktoks_check():
 
 
     return "tiktok job completed", 200
+
+
+@app.route("/test-message", methods=["GET"])
+def test_message():
+    send_message("hi!", "+12812240743")
+    return "done", 200
 
 
 

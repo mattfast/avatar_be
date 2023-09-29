@@ -36,6 +36,21 @@ def mongo_write_many(collection, entries):
     print(result)
     return result
 
+def mongo_push(collection, query, update):
+    try:
+        result = mongo_db[collection].update_one(
+            query, {"$push": update}, upsert=True
+        )
+    except pymongo.errors.OperationFailure:
+        print("MONGO UPDATE ERROR")
+        print(f"Collection: {collection}")
+        print(f"Query Param: {query}")
+        print(f"Update Param: {update}")
+        result = None
+
+    print(result)
+    return result
+
 
 def mongo_upsert(collection, query, update, update_many: bool = False):
     try:
