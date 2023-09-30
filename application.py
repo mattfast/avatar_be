@@ -174,6 +174,7 @@ def get_user_route():
         "last_name": user.get("last_name", None),
         "gender": user.get("gender", None),
         "images_uploaded": user.get("images_uploaded", None),
+        "user_id": user.get("user_id", None)
     }, 200
 
 @app.route("/get-referral-code", methods=["GET"])
@@ -485,7 +486,7 @@ def create_user():
         }
     )
 
-    return { "cookie": cookie }, 200
+    return { "cookie": cookie, "user_id": user_id }, 200
 
 @app.route("/update-user", methods=["POST"])
 def update_user():
@@ -578,6 +579,8 @@ def profile(user_id):
 
     return {
         "themes": profile.get("image_config", None),
+        "first_name": profile.get("first_name", None),
+        "last_name": profile.get("last_name", None),
         "position": pos
     }, 200
 
