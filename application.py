@@ -4,6 +4,7 @@ import time
 from uuid import uuid4
 from datetime import datetime, timedelta
 from random import shuffle
+from pymongo import DESCENDING
 
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -519,9 +520,21 @@ def get_leaderboard():
         return "user invalid", 401
 
     # retrieve votes + calculate leaderboard
-    leaderboard = get_top_users()
+    top_users = get_top_users()
+    print("TOP USERS")
+    print(top_users)
+    if top_users is None:
+        return { "leaderboard": [] }, 200
+    leaderboard_list = list(top_users)
+    print("LEADERBOARD LIST")
+    print(leaderboard_list)
+    leaderboard_map_list = list(map(lambda l: {
+        "user_id": l["user_id"],
+        "first_name": l["first_name"],
+        "last_name": l["last_name"],
+    }, leaderboard_list))
 
-    return { leaderboard }, 200
+    return { "leaderboard": leaderboard_map_list }, 200
 
 @app.route("/profile/<user_id>", methods=["GET"])
 def profile(user_id):
@@ -556,7 +569,7 @@ def profile(user_id):
         }
     )
 
-    users = mongo_read_sort("Users", {}, { "Votes": -1 })
+    users = list(get_top_users())
     pos = 0
     for i in range(len(users)):
         if users[i]["user_id"] == user_id:

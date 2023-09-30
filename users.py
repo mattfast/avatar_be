@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from pydantic import BaseModel
+from pymongo import DESCENDING
 
 from dbs.mongo import mongo_read, mongo_write, mongo_read_sort
 
@@ -23,8 +24,9 @@ def get_user(token, is_number=False):
 def get_users():
     return mongo_read("Users", {}, find_many=True)
 
-def get_top_users(limit=10):
-    return mongo_read_sort("Users", {}, { "votes": -1 }, limit=limit)
+def get_top_users(limit=100):
+    sortFilter = [('Votes', DESCENDING )]
+    return mongo_read_sort("Users", { "images_uploaded": True }, sortFilter, limit=limit)
 
 def create_user(number):
     mongo_write(
