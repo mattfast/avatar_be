@@ -307,7 +307,11 @@ def generate_feed():
     # find users not voted on yet
     users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on }, "images_uploaded": { "$eq": True } }, find_many=True)
     users_list = list(users_not_voted)
-    users_list_mapped = list(map(lambda u: u.get("user_id", ""), users_list))
+    users_list_mapped = list(map(lambda u: {
+        "user_id": u.get("user_id", ""),
+        "first_name": u.get("first_name", ""),
+        "last_name": u.get("last_name", "")
+    }, users_list))
     print(users_list_mapped)
     shuffle(users_list_mapped)
 
