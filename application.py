@@ -73,7 +73,8 @@ def generate_auth():
 
     # sends text message w search param
     url = f"https://dopple.club/?q={search_param}"
-    send_message(f"Hey! Here's your login link for dopple.club: {url}", "+1" + number)
+    send_message("Hey! Here's your login link for dopple.club:", "+1" + number)
+    send_message(url, "+1" + number)
     
     return "generated search param", 200
 
@@ -239,7 +240,8 @@ def confirm_referral():
 
             # if so: 1. text them, 2. update feed_available
             if then > now:
-                send_message("A friend signed up with your referral code! Your voting feed is available again: https://dopple.club/vote", "+1" + user.get("number", None))
+                send_message("A friend signed up with your referral code! Your voting feed is available again:", "+1" + user.get("number", None))
+                send_message("https://dopple.club/vote", "+1" + user.get("number", None))
                 mongo_upsert("Users", { "user_id": other_id }, { "feed_available_at": datetime.now() })
 
     return "success", 200
@@ -411,7 +413,8 @@ def send_feed_texts():
         notified_about_feed = u.get("notified_about_feed", None)
         if feed_available_at is not None and not notified_about_feed:
             if feed_available_at < now:
-                send_message("Your feed is ready again! Check out some more profiles: https://dopple.club/vote", "+1" + u.get("number", ""))
+                send_message("Your feed is ready again! Check out some more profiles:", "+1" + u.get("number", ""))
+                send_message("https://dopple.club/vote", "+1" + u.get("number", ""))
                 mongo_upsert("Users", { "user_id": u.get("user_id", None) }, { "notified_about_feed": True })
 
     return "success", 200
@@ -553,8 +556,16 @@ def profile(user_id):
         }
     )
 
+    users = mongo_read_sort("Users", {}, { "Votes": -1 })
+    pos = 0
+    for i in range(len(users)):
+        if users[i]["user_id"] == user_id:
+            pos = i + 1
+            break
+
     return {
-        "themes": profile.get("image_config", None)
+        "themes": profile.get("image_config", None),
+        "position": pos
     }, 200
 
 
