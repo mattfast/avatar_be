@@ -520,8 +520,8 @@ def get_leaderboard():
 
     return { leaderboard }, 200
 
-@app.route("/profile", methods=["GET"])
-def profile():
+@app.route("/profile/<user_id>", methods=["GET"])
+def profile(user_id):
 
     # login
     cookie = request.headers.get("auth-token")
@@ -533,9 +533,9 @@ def profile():
         return "user invalid", 401
 
     # retrieve user profile
-    data = request.json
-    user_id = data.get("user_id", None)
-    if data is None or user_id is None:
+    #data = request.json
+    #user_id = data.get("user_id", None)
+    if user_id is None:
         return "user id missing", 400
 
     profile = mongo_read("Users", { "user_id": user_id })
@@ -553,7 +553,9 @@ def profile():
         }
     )
 
-    return { profile }, 200
+    return {
+        "themes": profile.get("image_config", None)
+    }, 200
 
 
 ## CHECK METHODS
