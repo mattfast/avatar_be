@@ -510,6 +510,13 @@ def update_user():
     data = request.json
     mongo_upsert("Users", { "user_id": user.get("user_id", None) }, data)
 
+    # send text if they just completed signup flow
+    gender = data.get("gender", None)
+    number = user.get("number", None)
+    if gender is not None and number is not None:
+        send_message("Thanks for signing up for dopple.club!", "+1" + number)
+        send_message("Reply to this message with \"YES\" to make your experience better :)", "+1" + number)
+
     return "success", 200
 
 @app.route("/get-leaderboard", methods=["GET"])
