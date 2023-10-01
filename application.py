@@ -130,8 +130,8 @@ def validate_cookie():
     if user is None:
         return "user doesn't exist", 400
 
-    images_uploaded = user.get("images_uploaded", None)
-    if images_uploaded is None:
+    gender = user.get("gender", None)
+    if gender is None:
         return "user hasn't completed signup", 400
     
     return { "user_id": user.get("user_id", None) }, 200
@@ -305,7 +305,7 @@ def generate_feed():
     print("here6")
 
     # find users not voted on yet
-    users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on }, "images_uploaded": { "$eq": True } }, find_many=True)
+    users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on }, "gender": { "$exists": True } }, find_many=True)
     users_list = list(users_not_voted)
     users_list_mapped = list(map(lambda u: {
         "user_id": u.get("user_id", ""),
