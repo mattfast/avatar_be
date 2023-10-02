@@ -460,7 +460,7 @@ def send_update_texts():
                 text_id = str(uuid4())
                 send_message(f"{count} people have viewed your profile today 👀", "+1" + number)
                 send_message(f"Join the action:", "+1" + number)
-                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VIEWED, user_id=user_id, text_id=text_id, log=True)
+                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VIEWED, user_id=profile_id, text_id=text_id, log=True)
         
     elif text_type == "voted_for":
         votes = mongo_read_sort("Votes", {}, [('winner_id', DESCENDING )], limit=None)
