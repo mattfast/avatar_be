@@ -15,15 +15,7 @@ from auth import login
 from dbs.mongo import mongo_read, mongo_push, mongo_upsert, mongo_write, mongo_read_sort
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from users import get_user, get_top_users
-from messaging import send_message
-
-text_types = [
-    "viewed",
-    "voted_for",
-    "voted_against",
-    "leaderboard",
-    "total_activity"
-]
+from messaging import send_message, TextType
 
 app = Flask(__name__)
 CORS(app)
@@ -242,8 +234,9 @@ def confirm_referral():
 
             # if so: 1. text them, 2. update feed_available
             if then > now:
+                text_id = str(uuid4())
                 send_message("A friend signed up with your referral code! Your voting feed is available again:", "+1" + user.get("number", None))
-                send_message("https://dopple.club/vote", "+1" + user.get("number", None))
+                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + user.get("number", ""), message_type=TextType.UNLOCK_FEED_MANUAL, user_id=user.get("user_id", None), text_id=text_id, log=True)
                 mongo_upsert("Users", { "user_id": other_id }, { "feed_available_at": datetime.now() })
 
     return "success", 200
@@ -394,8 +387,9 @@ def send_text_blast():
         if num is None:
             continue
 
+        text_id=str(uuid4())
         send_message("🚨ALERT🚨 Your dopple is ready to view. Look here to see yours and your friends':", "+1" + num)
-        send_message("https://dopple.club/vote", "+1" + num)
+        send_message(f"https://dopple.club/vote?t={text_id}", "+1" + u.get("number", ""), message_type=TextType.ALERT, user_id=u.get("user_id", None), text_id=text_id, log=True)
 
     return "text blast sent", 200
 
@@ -419,13 +413,14 @@ def send_feed_texts():
         notified_about_feed = u.get("notified_about_feed", None)
         if feed_available_at is not None and not notified_about_feed:
             if feed_available_at < now:
+                text_id = str(uuid4())
                 send_message("Your feed is ready again! Check out some more profiles:", "+1" + u.get("number", ""))
-                send_message("https://dopple.club/vote", "+1" + u.get("number", ""))
+                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + u.get("number", ""), message_type=TextType.UNLOCK_FEED_AUTO, user_id=u.get("user_id", None), text_id=text_id, log=True)
                 mongo_upsert("Users", { "user_id": u.get("user_id", None) }, { "notified_about_feed": True })
 
     return "success", 200
 
-"""@app.route("/send-digest-texts", methods=["POST"])
+@app.route("/send-digest-texts", methods=["POST"])
 def send_update_texts():
     lambda_token_header = request.headers.get("lambda-token-header")
 
@@ -437,30 +432,124 @@ def send_update_texts():
     if users is None:
         return "users not found", 500
     
-    for u in users:
-        if u is None:
-            continue
-        u_id = u.get("user_id", None)
-        if u_id is None:
-            continue
+    data = request.json
+    if data is None:
+        return "no data", 400
+    
+    text_type = data.get("text_type", None)
+    if text_type is None:
+        return "no text_type", 400
+    
+    if text_type == "viewed":
+        views = mongo_read_sort("ProfileViews", {}, [('profile_id', DESCENDING )], limit=None)
+        view_count = {}
+        for view in views:
+            profile_id = view['profile_id']
+            if profile_id in view_count:
+                view_count[profile_id] += 1
+            else:
+                view_count[profile_id] = 1
+        
+        for profile_id in view_count.keys():
+            count = view_count[profile_id]
+            if count > 1:
+                user = mongo_read("Users", { "user_id": profile_id })
+                if user is None:
+                    continue
+                number = user.get("number", None)
+                text_id = str(uuid4())
+                send_message(f"{count} people have viewed your profile today 👀", "+1" + number)
+                send_message(f"Join the action:", "+1" + number)
+                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VIEWED, user_id=user_id, text_id=text_id, log=True)
+        
+    elif text_type == "voted_for":
+        votes = mongo_read_sort("Votes", {}, [('winner_id', DESCENDING )], limit=None)
+        vote_count = {}
+        for vote in votes:
+            winner_id = vote['winner_id']
+            if winner_id in view_count:
+                vote_count[winner_id] += 1
+            else:
+                vote_count[winner_id] = 1
+        
+        for winner_id in vote_count.keys():
+            count = vote_count[winner_id]
+            if count > 1:
+                user = mongo_read("Users", { "user_id": winner_id })
+                if user is None:
+                    continue
+                number = user.get("number", None)
+                text_id = str(uuid4())
+                send_message(f"{count} people have voted for you today 🎉", "+1" + number)
+                send_message(f"Open to see who:", "+1" + number)
+                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VOTED_FOR, user_id=winner_id, text_id=text_id, log=True)
 
-        texts = mongo_read_sort("TextsSent", { "user_id": u_id }, { "created_at": -1 }, limit=10)
-        now = datetime.now() - 
-        if texts.length == 0 or datetime.datetime(texts[0].get("created_at", None)):
 
-            
+    elif text_type == "voted_against":
+        votes = mongo_read_sort("Votes", {}, [('loser_id', DESCENDING )], limit=None)
+        vote_count = {}
+        for vote in votes:
+            loser_id = vote['loser_id']
+            if loser_id in view_count:
+                vote_count[loser_id] += 1
+            else:
+                vote_count[loser_id] = 1
+        
+        for loser_id in vote_count.keys():
+            count = vote_count[loser_id]
+            if count > 1:
+                user = mongo_read("Users", { "user_id": loser_id })
+                if user is None:
+                    continue
+                number = user.get("number", None)
+                text_id = str(uuid4())
+                send_message(f"{count} people have voted against you today 😬", "+1" + number)
+                send_message(f"Open to see who:", "+1" + number)
+                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VOTED_AGAINST, user_id=loser_id, text_id=text_id, log=True)
 
 
-    return ""
-"""
+    elif text_type == "leaderboard":
+        leaderboard = get_top_users()
+        for i in range(len(leaderboard)):
+            number = leaderboard[i].get("number", None)
+            user_id = leaderboard[i].get("user_id", None)
+            text_id = str(uuid4())
+            send_message(f"You're currently sitting at #{i+1} in the leaderboard 😏", "+1" + number)
+            send_message(f"Check out where your friends are:", "+1" + number)
+            send_message(f"https://dopple.club/leaderboard?t={text_id}", "+1" + number, message_type=TextType.LEADERBOARD, user_id=user_id, text_id=text_id, log=True)
+
+    return "texts sent!", 200
+
+@app.route("/mark-text-opened", methods=["POST"])
+def mark_text_opened():
+
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
+        return "cookie missing", 400
+    
+    data = request.json
+    if data is None:
+        return "data missing", 400
+
+    text_id = data.get("text_id", None)
+    if text_id is None:
+        return "text_id missing", 400
+    
+    mongo_upsert("Texts", { "text_id": text_id }, { "opened": True })
+
+    return "updated", 200
+
 
 @app.route("/create-user", methods=["POST"])
 def create_user():
 
     # check request format
     data = request.json
+    if data is None:
+        return "data missing", 400
+    
     number = data.get("number", None)
-    if data is None or number is None:
+    if number is None:
         return "number missing", 400
     
     # check for existing user
