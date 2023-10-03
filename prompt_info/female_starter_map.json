@@ -1,0 +1,383 @@
+{
+   "athlete_prompts": {
+      "stick_figure": [
+         "margot_snap"
+      ],
+      "south_park": [
+         "jen",
+         "bluejas"
+      ],
+      "magic": [
+         "jen"
+      ],
+      "spiderverse": [
+         "jen",
+         "tester"
+      ],
+      "impressionist": [
+         "jen",
+         "tester"
+      ],
+      "pixar": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas"
+      ],
+      "rickandmorty": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas"
+      ],
+      "magritte": [
+         "jen",
+         "tester"
+      ],
+      "pop": [
+         "hungergames2",
+         "tester",
+         "bluejas"
+      ],
+      "claymation": [
+         "hungergames2",
+         "tester"
+      ],
+      "ghibli": [
+         "bluejas"
+      ],
+      "pencil": [
+         "bluejas"
+      ]
+   },
+   "warrior_prompts": {
+      "stick_figure": [
+         "margot_snap"
+      ],
+      "pop": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "magic": [
+         "jen",
+         "hungergames2",
+         "tester"
+      ],
+      "spiderverse": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "impressionist": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ],
+      "pixar": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas"
+      ],
+      "rickandmorty": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ],
+      "minecraft": [
+         "jen",
+         "hungergames2",
+         "tester"
+      ],
+      "2d": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ],
+      "magritte": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "pencil": [
+         "jen",
+         "hungergames2",
+         "tester"
+      ],
+      "claymation": [
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ]
+   },
+   "magic_prompts": {
+      "stick_figure": [
+         "margot_snap"
+      ],
+      "pop": [
+         "jen"
+      ],
+      "magic": [
+         "jen",
+         "hungergames2"
+      ],
+      "spiderverse": [
+         "jen",
+         "bluejas",
+         "margot_snap"
+      ],
+      "impressionist": [
+         "jen",
+         "hungergames2",
+         "tester"
+      ],
+      "pixar": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "margot_snap"
+      ],
+      "claymation": [
+         "jen",
+         "hungergames"
+      ],
+      "rickandmorty": [
+         "jen",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "minecraft": [
+         "jen",
+         "hungergames2",
+         "tester"
+      ],
+      "ghibli": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ],
+      "magritte": [
+         "jen",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ]
+   },
+   "king_prompts": {
+      "stick_figure": [
+         "margot_snap"
+      ],
+      "pop": [
+         "jen",
+         "tester",
+         "bluejas"
+      ],
+      "spiderverse": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames",
+         "margot_snap"
+      ],
+      "impressionist": [
+         "jen",
+         "hungergames2",
+         "margot",
+         "tester",
+         "hungergames",
+         "margot_snap"
+      ],
+      "pixar": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames",
+         "margot_snap"
+      ],
+      "claymation": [
+         "jen",
+         "hungergames2",
+         "hungergames"
+      ],
+      "2d": [
+         "jen",
+         "hungergames2"
+      ],
+      "magritte": [
+         "jen",
+         "tester",
+         "hungergames"
+      ],
+      "pencil": [
+         "jen",
+         "margot",
+         "tester",
+         "margot_snap"
+      ],
+      "rickandmorty": [
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "ghibli": [
+         "hungergames2",
+         "margot",
+         "tester",
+         "hungergames"
+      ]
+   },
+   "princess_prompts": {
+      "stick_figure": [
+         "margot_snap"
+      ],
+      "pop": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "magic": [
+         "jen",
+         "hungergames"
+      ],
+      "spiderverse": [
+         "jen"
+      ],
+      "impressionist": [
+         "jen",
+         "tester",
+         "hungergames"
+      ],
+      "pixar": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "rickandmorty": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ],
+      "magritte": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "pencil": [
+         "jen",
+         "hungergames2",
+         "tester"
+      ],
+      "claymation": [
+         "hungergames2",
+         "tester"
+      ],
+      "minecraft": [
+         "hungergames2"
+      ],
+      "ghibli": [
+         "hungergames2",
+         "tester"
+      ],
+      "2d": [
+         "hungergames"
+      ]
+   },
+   "cowboy_prompts": {
+      "stick_figure": [
+         "margot_snap"
+      ],
+      "south_park": [
+         "jen"
+      ],
+      "magic": [
+         "jen"
+      ],
+      "spiderverse": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas"
+      ],
+      "impressionist": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames",
+         "margot_snap"
+      ],
+      "pixar": [
+         "jen",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "claymation": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames",
+         "margot_snap"
+      ],
+      "rickandmorty": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames",
+         "margot_snap"
+      ],
+      "minecraft": [
+         "jen",
+         "hungergames2",
+         "tester",
+         "bluejas",
+         "hungergames"
+      ],
+      "magritte": [
+         "jen",
+         "hungergames2",
+         "bluejas"
+      ],
+      "pencil": [
+         "jen",
+         "margot_snap"
+      ],
+      "pop": [
+         "hungergames2",
+         "tester",
+         "hungergames"
+      ],
+      "ghibli": [
+         "hungergames2",
+         "margot_snap"
+      ],
+      "2d": [
+         "tester"
+      ]
+   }
+}

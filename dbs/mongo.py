@@ -36,11 +36,10 @@ def mongo_write_many(collection, entries):
     print(result)
     return result
 
+
 def mongo_push(collection, query, update):
     try:
-        result = mongo_db[collection].update_one(
-            query, {"$push": update}, upsert=True
-        )
+        result = mongo_db[collection].update_one(query, {"$push": update}, upsert=True)
     except pymongo.errors.OperationFailure:
         print("MONGO UPDATE ERROR")
         print(f"Collection: {collection}")
@@ -92,6 +91,7 @@ def mongo_read(collection, filter, find_many: bool = False):
 
     return result
 
+
 def mongo_read_sort(collection, filter, sortFilter, limit=None):
 
     try:
@@ -110,6 +110,7 @@ def mongo_read_sort(collection, filter, sortFilter, limit=None):
         result = None
 
     return result
+
 
 def mongo_count(collection, query=None):
     try:

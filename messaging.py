@@ -18,6 +18,7 @@ from keys import (
 client = Client(twilio_account_sid, twilio_key)
 sendblue = Sendblue(sendblue_key, sendblue_secret)
 
+
 class TextType(Enum):
     UNLOCK_FEED_AUTO = "unlock_feed_auto"
     UNLOCK_FEED_MANUAL = "unlock_feed_manual"
@@ -27,7 +28,10 @@ class TextType(Enum):
     VOTED_AGAINST = "voted_against"
     LEADERBOARD = "leaderboard"
 
-def send_message(message, number, message_type=None, user_id=None, text_id=None, log=False):
+
+def send_message(
+    message, number, message_type=None, user_id=None, text_id=None, log=False
+):
     resp = None
     try:
         if carrier == "TWILIO":
@@ -61,13 +65,16 @@ def send_message(message, number, message_type=None, user_id=None, text_id=None,
         # log message to mongo
         if log:
             now = datetime.now()
-            mongo_write("Texts", { 
-                "text_id": text_id,
-                "message": message,
-                "created_at": now,
-                "opened": False,
-                "type": message_type,
-                "user_id": user_id
-            })
+            mongo_write(
+                "Texts",
+                {
+                    "text_id": text_id,
+                    "message": message,
+                    "created_at": now,
+                    "opened": False,
+                    "type": message_type,
+                    "user_id": user_id,
+                },
+            )
 
         return resp

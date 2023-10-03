@@ -22,6 +22,7 @@ langchain==0.0.195
 openai==0.27.6
 tiktoken==0.3.1
 pinecone-client==2.2.2
+sagemaker
 beautifulsoup4==4.12.2
 bs4==0.0.1
 pandas==2.0.2
@@ -35,3 +36,4 @@ sendblue==0.1.2
 TikTokApi==6.1.0
 flask-socketio==5.3.6
 simple-websocket==0.10.1
+pillow
