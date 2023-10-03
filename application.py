@@ -824,6 +824,7 @@ def train_user_model(user_id):
 def upload_model(user_id):
     package_thread = threading.Thread(target=package_model, args=[user_id])
     package_thread.start()
+    return "upload started", 201
 
 
 # Run user inference
@@ -837,12 +838,15 @@ def run_inference(user_id):
         target=generate_all_images, args=[user_id, endpoint_name]
     )
     inference_thread.start()
+    return "inference started", 201
 
 
 # Try to call at a specific cadence
 @app.route("/check-jobs", methods=["POST"])
 def check_jobs():
     check_job_status()
+    return "check jobs", 201
+
 
 
 ## CHECK METHODS
