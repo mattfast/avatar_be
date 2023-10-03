@@ -170,7 +170,7 @@ def get_user_route():
         "gender": user.get("gender", None),
         "images_uploaded": user.get("images_uploaded", None),
         "user_id": user.get("user_id", None),
-        "regenerations": user.get("regenerations", 0)
+        "regenerations": user.get("regenerations", 0),
     }, 200
 
 
@@ -331,12 +331,17 @@ def generate_feed():
         find_many=True,
     )
     users_list = list(users_not_voted)
-    users_list_mapped = list(map(lambda u: {
-        "user_id": u.get("user_id", ""),
-        "first_name": u.get("first_name", ""),
-        "last_name": u.get("last_name", ""),
-        "regenerations": u.get("regenerations", 0)
-    }, users_list))
+    users_list_mapped = list(
+        map(
+            lambda u: {
+                "user_id": u.get("user_id", ""),
+                "first_name": u.get("first_name", ""),
+                "last_name": u.get("last_name", ""),
+                "regenerations": u.get("regenerations", 0),
+            },
+            users_list,
+        )
+    )
     print(users_list_mapped)
     shuffle(users_list_mapped)
 
@@ -738,12 +743,17 @@ def get_leaderboard():
     leaderboard_list = list(top_users)
     print("LEADERBOARD LIST")
     print(leaderboard_list)
-    leaderboard_map_list = list(map(lambda l: {
-        "user_id": l["user_id"],
-        "first_name": l["first_name"],
-        "last_name": l["last_name"],
-        "regenerations": l.get("regenerations", 0)
-    }, leaderboard_list))
+    leaderboard_map_list = list(
+        map(
+            lambda l: {
+                "user_id": l["user_id"],
+                "first_name": l["first_name"],
+                "last_name": l["last_name"],
+                "regenerations": l.get("regenerations", 0),
+            },
+            leaderboard_list,
+        )
+    )
 
 
 @app.route("/profile/<user_id>", methods=["GET"])
@@ -791,8 +801,9 @@ def profile(user_id):
         "first_name": profile.get("first_name", None),
         "last_name": profile.get("last_name", None),
         "regenerations": profile.get("regenerations", 0),
-        "position": pos
+        "position": pos,
     }, 200
+
 
 @app.route("/regenerate-image", methods=["POST"])
 def regenerate_image():
@@ -800,15 +811,19 @@ def regenerate_image():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-    
+
     regenerations = user.get("regenerations", 0)
 
     if regenerations < 4:
-        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "regenerations": regenerations + 1 })
+        mongo_upsert(
+            "Users",
+            {"user_id": user.get("user_id", None)},
+            {"regenerations": regenerations + 1},
+        )
 
     return "done", 200
 
@@ -846,7 +861,6 @@ def run_inference(user_id):
 def check_jobs():
     check_job_status()
     return "check jobs", 201
-
 
 
 ## CHECK METHODS

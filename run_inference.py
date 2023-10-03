@@ -142,10 +142,18 @@ def construct_config_from_prompt_style(prompt: str, style_map: dict, style: str)
 def generate_all_images(
     user_id, endpoint_name: str = "stable-diffusion-mme-ep-2023-09-28-00-43-55"
 ):
+    print("ENTERED GENERATION")
     user = mongo_read("Users", {"user_id": user_id})
     user_prefs = user.get(
         "image_config", ["warrior", "athlete", "magic", "princess", "king", "cowboy"]
     )
+    replace_dict = {"magical": "magic"}
+    for i, pref in enumerate(user_prefs):
+        if pref in replace_dict:
+            user_prefs[i] = replace_dict[pref]
+
+    print("READ USER INGO")
+
     gender = user.get("gender", "girl").strip().lower()
 
     prefix = "female_"
@@ -158,6 +166,8 @@ def generate_all_images(
         extra_styles = full_boy_styles
         starter_file = f"prompt_info/starter_map.json"
 
+    print(f"LOADING STARTER MAP {starter_file}")
+
     model_name = f"{user_id}.tar.gz"
 
     bucket_name = "dopple-generated"
@@ -165,6 +175,8 @@ def generate_all_images(
 
     with open(starter_file, "r") as f:
         starter_map = json.load(f)
+
+    print("LOADED STARTER MAP FILE")
 
     mongo_upsert(
         "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "started"}
@@ -174,11 +186,18 @@ def generate_all_images(
         # Generate 10 images for the user
         for i in range(10):
             key = f"{user_id}/profile_{i}.png"
+            print("CHOOSING RANDOM CATEGORY FROM LIST")
             choice = random.choice(actual_choice_list)
             style_options = list(starter_map[choice].keys()) + extra_styles
+
+            print("CHOOSING RANDOM STYLE FROM LIST")
             style = random.choice(style_options)
+
+            print("LOADING PROMPTS FROM LIST")
             all_prompts = load_prompts(f"prompt_info/{prefix}{choice}.txt")
             chosen_prompt = random.choice(all_prompts)
+
+            print("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
             config = construct_config_from_prompt_style(chosen_prompt, style_map, style)
 
             # Random Extra styles not in the starter map
@@ -187,6 +206,7 @@ def generate_all_images(
             else:
                 filter_to_use = random.choice(list(starter_map[choice][style]))
 
+            print("OPENING IMAGE")
             try:
                 filter_image = Image.open(f"filters/tested/{filter_to_use}.jpeg")
             except:
@@ -207,11 +227,12 @@ def generate_all_images(
                 Body=in_mem_file,
                 ContentType="image/jpeg",
             )
-    except:
+        mongo_upsert(
+            "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
+        )
+    except Exception as e:
+        print("EXCEPTION GENERATED")
+        print(e)
         mongo_upsert(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "failure"}
         )
-
-    mongo_upsert(
-        "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
-    )
