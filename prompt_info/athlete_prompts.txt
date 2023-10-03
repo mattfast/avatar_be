@@ -1,0 +1,7 @@
+ukj person as an elite ambiguous basketball player, set against a basketball court, basketball jersey on
+ukj person as an elite ambiguous soccer player, set against a stadium background, soccer jersey on || {"steps": 90}
+ukj person as an elite ambiguous american football player, set against a stadium, uniform on  || {"steps": 90}
+ukj person fully body as an elite tennis player standing and serving a tennis ball  || {"steps": 90}
+ukj person fully body as an elite ambiguous golfer standing and swinging a club, uniform on  || {"steps": 90}
+ukj person full body as an elite volleyball player standing and serving a volleyball, uniform on  || {"steps": 90}
+ukj person surfing a wave from the movie Point Break, set against the ocean || {"strength": 1, "steps": 110}

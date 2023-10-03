@@ -1,5 +1,6 @@
 from users import create_user, get_user
 
+
 def login(token):
     user = get_user(token)
     is_first = user is None

@@ -1,21 +1,24 @@
 import asyncio
 import threading
 import time
-from uuid import uuid4
 from datetime import datetime, timedelta
 from random import shuffle
-from pymongo import DESCENDING
+from uuid import uuid4
 
 from flask import Flask, Response, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
+from pymongo import DESCENDING
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from dbs.mongo import mongo_read, mongo_push, mongo_upsert, mongo_write, mongo_read_sort
+from dbs.mongo import mongo_push, mongo_read, mongo_read_sort, mongo_upsert, mongo_write
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
-from users import get_user, get_top_users
-from messaging import send_message, TextType
+from messaging import TextType, send_message
+from package_model import package_model
+from run_inference import generate_all_images
+from train_model import check_job_status, post_request
+from users import get_top_users, get_user
 
 app = Flask(__name__)
 CORS(app)
@@ -31,9 +34,11 @@ socketio = SocketIO(
     transports=["websocket"],
 )
 
+
 @app.route("/")
 def healthy():
     return "healthy!"
+
 
 @app.route("/generate-auth", methods=["POST"])
 def generate_auth():
@@ -61,15 +66,16 @@ def generate_auth():
             "search_param": search_param,
             "user_id": user_id,
             "created_at": datetime.now(),
-        }
+        },
     )
 
     # sends text message w search param
     url = f"https://dopple.club/?q={search_param}"
     send_message("Hey! Here's your login link for dopple.club:", "+1" + number)
     send_message(url, "+1" + number)
-    
+
     return "generated search param", 200
+
 
 @app.route("/verify-auth", methods=["POST"])
 def verify_auth():
@@ -84,10 +90,10 @@ def verify_auth():
         return "search_param missing", 400
 
     # checks that url search param exists
-    db_param = mongo_read("SearchParams", { "search_param": search_param })
+    db_param = mongo_read("SearchParams", {"search_param": search_param})
     if db_param is None:
         return "search param invalid", 401
-    
+
     user_id = db_param.get("user_id", None)
     if user_id is None:
         return "search param db entry invalid", 500
@@ -101,10 +107,11 @@ def verify_auth():
             "cookie": cookie,
             "user_id": user_id,
             "created_at": datetime.now(),
-        }
+        },
     )
 
-    return { "cookie": cookie }, 200
+    return {"cookie": cookie}, 200
+
 
 @app.route("/validate-cookie", methods=["POST"])
 def validate_cookie():
@@ -113,11 +120,11 @@ def validate_cookie():
     data = request.json
     if data is None:
         return "data missing", 400
-    
+
     cookie = data.get("cookie", None)
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user doesn't exist", 400
@@ -125,8 +132,9 @@ def validate_cookie():
     gender = user.get("gender", None)
     if gender is None:
         return "user hasn't completed signup", 400
-    
-    return { "user_id": user.get("user_id", None) }, 200
+
+    return {"user_id": user.get("user_id", None)}, 200
+
 
 @app.route("/get-user", methods=["GET"])
 def get_user_route():
@@ -135,31 +143,26 @@ def get_user_route():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     cookie = mongo_read(
         "Cookies",
         {
             "cookie": cookie,
-        }
+        },
     )
 
     if cookie is None:
         return "cookie invalid", 400
-    
+
     user_id = cookie.get("user_id", None)
     if user_id is None:
         return "cookie not configured properly", 500
-    
-    user = mongo_read(
-        "Users",
-        { 
-            "user_id": user_id
-        }
-    )
+
+    user = mongo_read("Users", {"user_id": user_id})
 
     if user is None:
         return "user not found", 500
-    
+
     return {
         "number": user.get("number", None),
         "first_name": user.get("first_name", None),
@@ -170,63 +173,72 @@ def get_user_route():
         "regenerations": user.get("regenerations", 0)
     }, 200
 
+
 @app.route("/get-referral-code", methods=["GET"])
 def get_referral_code():
     # login
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-    
+
     user_id = user.get("user_id", None)
     if user_id is None:
         return "search param db entry invalid", 500
-    
-    referral_code = mongo_read("ReferralCodes", { "user_id": user_id })
+
+    referral_code = mongo_read("ReferralCodes", {"user_id": user_id})
 
     if referral_code is None:
         referral_code = str(uuid4())
-        mongo_write("ReferralCodes", {
-            "user_id": user_id,
-            "code": referral_code,
-            "referred_users": [],
-            "created_at": datetime.now()
-        })
-        return { "referral_code": referral_code }, 200
-    
-    return { "referral_code": referral_code.get("code", None) }, 200
+        mongo_write(
+            "ReferralCodes",
+            {
+                "user_id": user_id,
+                "code": referral_code,
+                "referred_users": [],
+                "created_at": datetime.now(),
+            },
+        )
+        return {"referral_code": referral_code}, 200
+
+    return {"referral_code": referral_code.get("code", None)}, 200
+
 
 @app.route("/confirm-referral", methods=["POST"])
 def confirm_referral():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-    
+
     # check request format
     data = request.json
     if data is None:
         return "data missing", 400
-    
+
     referral_code = data.get("referral_code", None)
     if referral_code is None:
         return "referral_code missing", 400
-    
+
     # add users to referred users in table
-    mongo_push("ReferralCodes", { "code": referral_code }, { "referred_users": user.get("user_id", None)})
+    mongo_push(
+        "ReferralCodes",
+        {"code": referral_code},
+        {"referred_users": user.get("user_id", None)},
+    )
 
     # check if other user was waiting to access feed
-    ref_code_db = mongo_read("ReferralCodes", { "code": referral_code })
+    ref_code_db = mongo_read("ReferralCodes", {"code": referral_code})
     other_id = ref_code_db.get("user_id", None)
 
     if other_id is not None:
-        user = mongo_read("Users", { "user_id": other_id })
+        user = mongo_read("Users", {"user_id": other_id})
 
         avail_time = user.get("feed_available_at", None)
         if avail_time is not None:
@@ -236,9 +248,23 @@ def confirm_referral():
             # if so: 1. text them, 2. update feed_available
             if then > now:
                 text_id = str(uuid4())
-                send_message("A friend signed up with your referral code! Your voting feed is available again:", "+1" + user.get("number", None))
-                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + user.get("number", ""), message_type=TextType.UNLOCK_FEED_MANUAL, user_id=user.get("user_id", None), text_id=text_id, log=True)
-                mongo_upsert("Users", { "user_id": other_id }, { "feed_available_at": datetime.now() })
+                send_message(
+                    "A friend signed up with your referral code! Your voting feed is available again:",
+                    "+1" + user.get("number", None),
+                )
+                send_message(
+                    f"https://dopple.club/vote?t={text_id}",
+                    "+1" + user.get("number", ""),
+                    message_type=TextType.UNLOCK_FEED_MANUAL,
+                    user_id=user.get("user_id", None),
+                    text_id=text_id,
+                    log=True,
+                )
+                mongo_upsert(
+                    "Users",
+                    {"user_id": other_id},
+                    {"feed_available_at": datetime.now()},
+                )
 
     return "success", 200
 
@@ -249,21 +275,21 @@ def generate_feed():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     print("here1")
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-    
+
     print("here2")
-    
+
     user_id = user.get("user_id", None)
     if user_id is None:
         return "search param db entry invalid", 500
-    
+
     print("here3")
-    
+
     # check if it's too soon to view feed again
     feed_available_at = user.get("feed_available_at", None)
     now = datetime.now()
@@ -271,10 +297,10 @@ def generate_feed():
     print(feed_available_at)
     print(now)
     if feed_available_at is not None and feed_available_at > now:
-        return { "user_list": [], "ready_at": feed_available_at, "is_final": False }, 200
-    
+        return {"user_list": [], "ready_at": feed_available_at, "is_final": False}, 200
+
     print("here4")
-    
+
     # if feed has already been generated, return it
     feed = user.get("feed", None)
     feed_index = user.get("feed_index", 0)
@@ -284,13 +310,13 @@ def generate_feed():
     print("FEED INDEX")
     print(feed_index)
     if feed is not None and len(feed) > 0:
-        return { "user_list": feed, "feed_index": feed_index }, 200
-    
+        return {"user_list": feed, "feed_index": feed_index}, 200
+
     print("here5")
 
     # GENERATE FEED
     # retrieve existing votes
-    votes = mongo_read("Votes", { "decider_id": user_id }, find_many=True)
+    votes = mongo_read("Votes", {"decider_id": user_id}, find_many=True)
     voted_on = [str(user_id)]
     for v in votes:
         voted_on.append(str(v.get("winner_id", "")))
@@ -299,7 +325,11 @@ def generate_feed():
     print("here6")
 
     # find users not voted on yet
-    users_not_voted = mongo_read("Users", { "user_id": { "$nin": voted_on }, "gender": { "$exists": True } }, find_many=True)
+    users_not_voted = mongo_read(
+        "Users",
+        {"user_id": {"$nin": voted_on}, "gender": {"$exists": True}},
+        find_many=True,
+    )
     users_list = list(users_not_voted)
     users_list_mapped = list(map(lambda u: {
         "user_id": u.get("user_id", ""),
@@ -314,11 +344,12 @@ def generate_feed():
 
     # update user with new info
     feed = users_list_mapped[:24]
-    mongo_upsert("Users", { "user_id": user_id }, { "feed": feed, "feed_index": 0 })
+    mongo_upsert("Users", {"user_id": user_id}, {"feed": feed, "feed_index": 0})
 
     print("here8")
 
-    return { "user_list": feed, "feed_index": 0 }, 200
+    return {"user_list": feed, "feed_index": 0}, 200
+
 
 @app.route("/post-decision", methods=["POST"])
 def post_decision():
@@ -327,11 +358,11 @@ def post_decision():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-    
+
     # validate data
     data = request.json
     winner_id = data.get("winner_id", None)
@@ -346,17 +377,13 @@ def post_decision():
             "voter_id": user.get("user_id", None),
             "winner_id": winner_id,
             "loser_id": loser_id,
-            "created_at": datetime.now()
-        }
+            "created_at": datetime.now(),
+        },
     )
 
     # update winners' table
-    winner = mongo_read("Users", { "user_id": winner_id })
-    mongo_upsert(
-        "Users",
-        { "user_id": winner_id },
-        { "votes": winner.get("votes", 0) + 1 }
-    )
+    winner = mongo_read("Users", {"user_id": winner_id})
+    mongo_upsert("Users", {"user_id": winner_id}, {"votes": winner.get("votes", 0) + 1})
 
     # update feed_index (and feed_available_at + notified_about_feed if necessary)
     feed_index = user.get("feed_index", 0)
@@ -364,11 +391,22 @@ def post_decision():
     if feed_index >= 23:
         now = datetime.now()
         future_time = now + timedelta(minutes=40)
-        mongo_upsert("Users", { "user_id": user.get("user_id", "") }, { "feed": [], "notified_about_feed": False, "feed_available_at": future_time })
+        mongo_upsert(
+            "Users",
+            {"user_id": user.get("user_id", "")},
+            {
+                "feed": [],
+                "notified_about_feed": False,
+                "feed_available_at": future_time,
+            },
+        )
     else:
-        mongo_upsert("Users", { "user_id": user.get("user_id", "") }, { "feed_index": feed_index })
+        mongo_upsert(
+            "Users", {"user_id": user.get("user_id", "")}, {"feed_index": feed_index}
+        )
 
     return "posted", 200
+
 
 @app.route("/send-text-blast", methods=["POST"])
 def send_text_blast():
@@ -389,11 +427,22 @@ def send_text_blast():
         if num is None:
             continue
 
-        text_id=str(uuid4())
-        send_message("🚨ALERT🚨 Your dopple is ready to view. Look here to see yours and your friends':", "+1" + num)
-        send_message(f"https://dopple.club/vote?t={text_id}", "+1" + u.get("number", ""), message_type=TextType.ALERT, user_id=u.get("user_id", None), text_id=text_id, log=True)
+        text_id = str(uuid4())
+        send_message(
+            "🚨ALERT🚨 Your dopple is ready to view. Look here to see yours and your friends':",
+            "+1" + num,
+        )
+        send_message(
+            f"https://dopple.club/vote?t={text_id}",
+            "+1" + u.get("number", ""),
+            message_type=TextType.ALERT,
+            user_id=u.get("user_id", None),
+            text_id=text_id,
+            log=True,
+        )
 
     return "text blast sent", 200
+
 
 @app.route("/send-feed-texts", methods=["POST"])
 def send_feed_texts():
@@ -401,7 +450,7 @@ def send_feed_texts():
 
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
-    
+
     users = mongo_read("Users", {}, find_many=True)
 
     if users is None:
@@ -416,11 +465,26 @@ def send_feed_texts():
         if feed_available_at is not None and not notified_about_feed:
             if feed_available_at < now:
                 text_id = str(uuid4())
-                send_message("Your feed is ready again! Check out some more profiles:", "+1" + u.get("number", ""))
-                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + u.get("number", ""), message_type=TextType.UNLOCK_FEED_AUTO, user_id=u.get("user_id", None), text_id=text_id, log=True)
-                mongo_upsert("Users", { "user_id": u.get("user_id", None) }, { "notified_about_feed": True })
+                send_message(
+                    "Your feed is ready again! Check out some more profiles:",
+                    "+1" + u.get("number", ""),
+                )
+                send_message(
+                    f"https://dopple.club/vote?t={text_id}",
+                    "+1" + u.get("number", ""),
+                    message_type=TextType.UNLOCK_FEED_AUTO,
+                    user_id=u.get("user_id", None),
+                    text_id=text_id,
+                    log=True,
+                )
+                mongo_upsert(
+                    "Users",
+                    {"user_id": u.get("user_id", None)},
+                    {"notified_about_feed": True},
+                )
 
     return "success", 200
+
 
 @app.route("/send-digest-texts", methods=["POST"])
 def send_update_texts():
@@ -428,87 +492,114 @@ def send_update_texts():
 
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
-    
+
     users = mongo_read("Users", {}, find_many=True)
 
     if users is None:
         return "users not found", 500
-    
+
     data = request.json
     if data is None:
         return "no data", 400
-    
+
     text_type = data.get("text_type", None)
     if text_type is None:
         return "no text_type", 400
-    
+
     if text_type == "viewed":
-        views = mongo_read_sort("ProfileViews", {}, [('profile_id', DESCENDING )], limit=None)
+        views = mongo_read_sort(
+            "ProfileViews", {}, [("profile_id", DESCENDING)], limit=None
+        )
         view_count = {}
         for view in views:
-            profile_id = view['profile_id']
+            profile_id = view["profile_id"]
             if profile_id in view_count:
                 view_count[profile_id] += 1
             else:
                 view_count[profile_id] = 1
-        
+
         for profile_id in view_count.keys():
             count = view_count[profile_id]
             if count > 1:
-                user = mongo_read("Users", { "user_id": profile_id })
+                user = mongo_read("Users", {"user_id": profile_id})
                 if user is None:
                     continue
                 number = user.get("number", None)
                 text_id = str(uuid4())
-                send_message(f"{count} people have viewed your profile today 👀", "+1" + number)
+                send_message(
+                    f"{count} people have viewed your profile today 👀", "+1" + number
+                )
                 send_message(f"Join the action:", "+1" + number)
-                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VIEWED, user_id=profile_id, text_id=text_id, log=True)
-        
+                send_message(
+                    f"https://dopple.club/vote?t={text_id}",
+                    "+1" + number,
+                    message_type=TextType.VIEWED,
+                    user_id=profile_id,
+                    text_id=text_id,
+                    log=True,
+                )
+
     elif text_type == "voted_for":
-        votes = mongo_read_sort("Votes", {}, [('winner_id', DESCENDING )], limit=None)
+        votes = mongo_read_sort("Votes", {}, [("winner_id", DESCENDING)], limit=None)
         vote_count = {}
         for vote in votes:
-            winner_id = vote['winner_id']
-            if winner_id in view_count:
+            winner_id = vote["winner_id"]
+            if winner_id in vote_count:
                 vote_count[winner_id] += 1
             else:
                 vote_count[winner_id] = 1
-        
+
         for winner_id in vote_count.keys():
             count = vote_count[winner_id]
             if count > 1:
-                user = mongo_read("Users", { "user_id": winner_id })
+                user = mongo_read("Users", {"user_id": winner_id})
                 if user is None:
                     continue
                 number = user.get("number", None)
                 text_id = str(uuid4())
-                send_message(f"{count} people have voted for you today 🎉", "+1" + number)
+                send_message(
+                    f"{count} people have voted for you today 🎉", "+1" + number
+                )
                 send_message(f"Open to see who:", "+1" + number)
-                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VOTED_FOR, user_id=winner_id, text_id=text_id, log=True)
-
+                send_message(
+                    f"https://dopple.club/vote?t={text_id}",
+                    "+1" + number,
+                    message_type=TextType.VOTED_FOR,
+                    user_id=winner_id,
+                    text_id=text_id,
+                    log=True,
+                )
 
     elif text_type == "voted_against":
-        votes = mongo_read_sort("Votes", {}, [('loser_id', DESCENDING )], limit=None)
+        votes = mongo_read_sort("Votes", {}, [("loser_id", DESCENDING)], limit=None)
         vote_count = {}
         for vote in votes:
-            loser_id = vote['loser_id']
-            if loser_id in view_count:
+            loser_id = vote["loser_id"]
+            if loser_id in vote_count:
                 vote_count[loser_id] += 1
             else:
                 vote_count[loser_id] = 1
-        
+
         for loser_id in vote_count.keys():
             count = vote_count[loser_id]
             if count > 1:
-                user = mongo_read("Users", { "user_id": loser_id })
+                user = mongo_read("Users", {"user_id": loser_id})
                 if user is None:
                     continue
                 number = user.get("number", None)
                 text_id = str(uuid4())
-                send_message(f"{count} people have voted against you today 😬", "+1" + number)
+                send_message(
+                    f"{count} people have voted against you today 😬", "+1" + number
+                )
                 send_message(f"Open to see who:", "+1" + number)
-                send_message(f"https://dopple.club/vote?t={text_id}", "+1" + number, message_type=TextType.VOTED_AGAINST, user_id=loser_id, text_id=text_id, log=True)
-
+                send_message(
+                    f"https://dopple.club/vote?t={text_id}",
+                    "+1" + number,
+                    message_type=TextType.VOTED_AGAINST,
+                    user_id=loser_id,
+                    text_id=text_id,
+                    log=True,
+                )
 
     elif text_type == "leaderboard":
         leaderboard = get_top_users()
@@ -516,11 +607,22 @@ def send_update_texts():
             number = leaderboard[i].get("number", None)
             user_id = leaderboard[i].get("user_id", None)
             text_id = str(uuid4())
-            send_message(f"You're currently sitting at #{i+1} in the leaderboard 😏", "+1" + number)
+            send_message(
+                f"You're currently sitting at #{i+1} in the leaderboard 😏",
+                "+1" + number,
+            )
             send_message(f"Check out where your friends are:", "+1" + number)
-            send_message(f"https://dopple.club/leaderboard?t={text_id}", "+1" + number, message_type=TextType.LEADERBOARD, user_id=user_id, text_id=text_id, log=True)
+            send_message(
+                f"https://dopple.club/leaderboard?t={text_id}",
+                "+1" + number,
+                message_type=TextType.LEADERBOARD,
+                user_id=user_id,
+                text_id=text_id,
+                log=True,
+            )
 
     return "texts sent!", 200
+
 
 @app.route("/mark-text-opened", methods=["POST"])
 def mark_text_opened():
@@ -528,7 +630,7 @@ def mark_text_opened():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     data = request.json
     if data is None:
         return "data missing", 400
@@ -536,8 +638,8 @@ def mark_text_opened():
     text_id = data.get("text_id", None)
     if text_id is None:
         return "text_id missing", 400
-    
-    mongo_upsert("Texts", { "text_id": text_id }, { "opened": True })
+
+    mongo_upsert("Texts", {"text_id": text_id}, {"opened": True})
 
     return "updated", 200
 
@@ -549,16 +651,16 @@ def create_user():
     data = request.json
     if data is None:
         return "data missing", 400
-    
+
     number = data.get("number", None)
     if number is None:
         return "number missing", 400
-    
+
     # check for existing user
-    existing_user = mongo_read("Users", { "number": number })
+    existing_user = mongo_read("Users", {"number": number})
     if existing_user is not None:
         return "user with number already exists", 400
-    
+
     # create new user
     user_id = str(uuid4())
     mongo_write(
@@ -567,7 +669,7 @@ def create_user():
             "user_id": user_id,
             "number": number,
             "created_at": datetime.now(),
-        }
+        },
     )
 
     # returns new cookie
@@ -578,10 +680,11 @@ def create_user():
             "cookie": cookie,
             "user_id": user_id,
             "created_at": datetime.now(),
-        }
+        },
     )
 
-    return { "cookie": cookie, "user_id": user_id }, 200
+    return {"cookie": cookie, "user_id": user_id}, 200
+
 
 @app.route("/update-user", methods=["POST"])
 def update_user():
@@ -589,26 +692,30 @@ def update_user():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     print(cookie)
 
     # check for existing user
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-    
+
     # insert new data
     data = request.json
-    mongo_upsert("Users", { "user_id": user.get("user_id", None) }, data)
+    mongo_upsert("Users", {"user_id": user.get("user_id", None)}, data)
 
     # send text if they just completed signup flow
     gender = data.get("gender", None)
     number = user.get("number", None)
     if gender is not None and number is not None:
         send_message("Thanks for signing up for dopple.club!", "+1" + number)
-        send_message("Reply to this message with \"YES\" to make your experience better :)", "+1" + number)
+        send_message(
+            'Reply to this message with "YES" to make your experience better :)',
+            "+1" + number,
+        )
 
     return "success", 200
+
 
 @app.route("/get-leaderboard", methods=["GET"])
 def get_leaderboard():
@@ -617,7 +724,7 @@ def get_leaderboard():
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
@@ -627,7 +734,7 @@ def get_leaderboard():
     print("TOP USERS")
     print(top_users)
     if top_users is None:
-        return { "leaderboard": [] }, 200
+        return {"leaderboard": []}, 200
     leaderboard_list = list(top_users)
     print("LEADERBOARD LIST")
     print(leaderboard_list)
@@ -638,7 +745,6 @@ def get_leaderboard():
         "regenerations": l.get("regenerations", 0)
     }, leaderboard_list))
 
-    return { "leaderboard": leaderboard_map_list }, 200
 
 @app.route("/profile/<user_id>", methods=["GET"])
 def profile(user_id):
@@ -647,18 +753,18 @@ def profile(user_id):
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-    
+
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
 
     # retrieve user profile
-    #data = request.json
-    #user_id = data.get("user_id", None)
+    # data = request.json
+    # user_id = data.get("user_id", None)
     if user_id is None:
         return "user id missing", 400
 
-    profile = mongo_read("Users", { "user_id": user_id })
+    profile = mongo_read("Users", {"user_id": user_id})
     if profile is None:
         return "profile not found", 404
 
@@ -669,8 +775,8 @@ def profile(user_id):
         {
             "viewer_id": user.get("user_id", None),
             "profile_id": user_id,
-            "created_at": datetime.now()
-        }
+            "created_at": datetime.now(),
+        },
     )
 
     users = list(get_top_users())
@@ -707,6 +813,38 @@ def regenerate_image():
     return "done", 200
 
 
+# Kickoff user training
+@app.route("/train-user-model/<user_id>", methods=["POST"])
+def train_user_model(user_id):
+    post_request(user_id)
+
+
+# Upload User Model to s3
+@app.route("/upload-model/<user_id>", methods=["POST"])
+def upload_model(user_id):
+    package_thread = threading.Thread(target=package_model, args=[user_id])
+    package_thread.start()
+
+
+# Run user inference
+@app.route("/run-inference/<user_id>", methods=["POST"])
+def run_inference(user_id):
+    data = request.json
+    endpoint_name = data.get(
+        "endpoint_name", "stable-diffusion-mme-ep-2023-09-28-00-43-55"
+    )
+    inference_thread = threading.Thread(
+        target=generate_all_images, args=[user_id, endpoint_name]
+    )
+    inference_thread.start()
+
+
+# Try to call at a specific cadence
+@app.route("/check-jobs", methods=["POST"])
+def check_jobs():
+    check_job_status()
+
+
 ## CHECK METHODS
 @app.route("/send-tiktoks-check", methods=["POST"])
 def send_tiktoks_check():
@@ -715,7 +853,6 @@ def send_tiktoks_check():
     if checkly_token_header != checkly_token:
         return "checkly token invalid", 401
 
-
     return "tiktok job completed", 200
 
 
@@ -723,8 +860,6 @@ def send_tiktoks_check():
 def test_message():
     send_message("hi!", "+12812240743")
     return "done", 200
-
-
 
 
 if __name__ == "__main__":
