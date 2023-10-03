@@ -115,6 +115,7 @@ def package_model(user_id):
         )
     except:
         # Upsert Directory to Say Model Has been uploaded
+        print("JUST EXCEPTED")
         mongo_upsert(
             "UserTrainingJobs",
             {"user_id": user_id},
