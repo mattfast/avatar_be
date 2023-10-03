@@ -56,6 +56,7 @@ def package_model(user_id):
     )
 
     try:
+        print("ENTERING LOOP")
         res2 = requests.get(url, headers=headers)
         loaded_resp = json.loads(res2.text)
         model_url = loaded_resp["dreambooth_result"]["checkpoints"][0]["url"]
