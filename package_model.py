@@ -113,9 +113,10 @@ def package_model(user_id):
             {"user_id": user_id},
             {"upload_status": "success", "uploaded_time": datetime.now(timezone.utc)},
         )
-    except:
+    except Exception as e:
         # Upsert Directory to Say Model Has been uploaded
         print("JUST EXCEPTED")
+        print(e)
         mongo_upsert(
             "UserTrainingJobs",
             {"user_id": user_id},
