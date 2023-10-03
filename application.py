@@ -170,6 +170,7 @@ def get_user_route():
         "gender": user.get("gender", None),
         "images_uploaded": user.get("images_uploaded", None),
         "user_id": user.get("user_id", None),
+        "regenerations": user.get("regenerations", 0)
     }, 200
 
 
@@ -330,16 +331,12 @@ def generate_feed():
         find_many=True,
     )
     users_list = list(users_not_voted)
-    users_list_mapped = list(
-        map(
-            lambda u: {
-                "user_id": u.get("user_id", ""),
-                "first_name": u.get("first_name", ""),
-                "last_name": u.get("last_name", ""),
-            },
-            users_list,
-        )
-    )
+    users_list_mapped = list(map(lambda u: {
+        "user_id": u.get("user_id", ""),
+        "first_name": u.get("first_name", ""),
+        "last_name": u.get("last_name", ""),
+        "regenerations": u.get("regenerations", 0)
+    }, users_list))
     print(users_list_mapped)
     shuffle(users_list_mapped)
 
@@ -547,7 +544,7 @@ def send_update_texts():
         vote_count = {}
         for vote in votes:
             winner_id = vote["winner_id"]
-            if winner_id in view_count:
+            if winner_id in vote_count:
                 vote_count[winner_id] += 1
             else:
                 vote_count[winner_id] = 1
@@ -578,7 +575,7 @@ def send_update_texts():
         vote_count = {}
         for vote in votes:
             loser_id = vote["loser_id"]
-            if loser_id in view_count:
+            if loser_id in vote_count:
                 vote_count[loser_id] += 1
             else:
                 vote_count[loser_id] = 1
@@ -741,18 +738,12 @@ def get_leaderboard():
     leaderboard_list = list(top_users)
     print("LEADERBOARD LIST")
     print(leaderboard_list)
-    leaderboard_map_list = list(
-        map(
-            lambda l: {
-                "user_id": l["user_id"],
-                "first_name": l["first_name"],
-                "last_name": l["last_name"],
-            },
-            leaderboard_list,
-        )
-    )
-
-    return {"leaderboard": leaderboard_map_list}, 200
+    leaderboard_map_list = list(map(lambda l: {
+        "user_id": l["user_id"],
+        "first_name": l["first_name"],
+        "last_name": l["last_name"],
+        "regenerations": l.get("regenerations", 0)
+    }, leaderboard_list))
 
 
 @app.route("/profile/<user_id>", methods=["GET"])
@@ -799,8 +790,27 @@ def profile(user_id):
         "themes": profile.get("image_config", None),
         "first_name": profile.get("first_name", None),
         "last_name": profile.get("last_name", None),
-        "position": pos,
+        "regenerations": profile.get("regenerations", 0),
+        "position": pos
     }, 200
+
+@app.route("/regenerate-image", methods=["POST"])
+def regenerate_image():
+
+    cookie = request.headers.get("auth-token")
+    if cookie is None:
+        return "cookie missing", 400
+    
+    user = get_user(cookie)
+    if user is None:
+        return "user invalid", 401
+    
+    regenerations = user.get("regenerations", 0)
+
+    if regenerations < 4:
+        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "regenerations": regenerations + 1 })
+
+    return "done", 200
 
 
 # Kickoff user training
