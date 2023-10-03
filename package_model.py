@@ -38,12 +38,14 @@ def package_model(user_id):
         number_of_folders = 0
 
     if number_of_folders >= 10:
+        print(f"Number of folders {number_of_folders}")
         return
 
     training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
     url = training_job.get("job_url", None)
 
     if url is None:
+        print(f"URL IS NONE")
         return
 
     # Upsert Directory to Say Model Has been uploaded
@@ -57,13 +59,17 @@ def package_model(user_id):
         res2 = requests.get(url, headers=headers)
         loaded_resp = json.loads(res2.text)
         model_url = loaded_resp["dreambooth_result"]["checkpoints"][0]["url"]
+        print(f"Got Model URL {model_url}")
 
         user_name = user_id
         base_path = Path(model_folder_name) / user_name
         artifacts_folder = Path(model_folder_name) / "artifacts"
+
+        print(f"Creating Base Path {str(base_path)}")
         base_path.mkdir(parents=True, exist_ok=True)
 
         model_version_path = base_path / "1"
+        print(f"Creating Model Version Path {str(model_version_path)}")
         model_version_path.mkdir(parents=True, exist_ok=True)
 
         print("Writing config.pbtxt file")
