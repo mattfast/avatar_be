@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import os
 import random
 from pathlib import Path
 import time
@@ -165,7 +166,7 @@ def generate_all_images(
         prefix = ""
         style_map = boy_styles
         extra_styles = full_boy_styles
-        starter_file = Path(f"prompt_info/starter_map.json")
+        starter_file = Path(f"{os.getcwd()}/prompt_info/starter_map.json")
 
     print(f"LOADING STARTER MAP {starter_file}")
 
@@ -195,7 +196,7 @@ def generate_all_images(
             style = random.choice(style_options)
 
             print("LOADING PROMPTS FROM LIST")
-            all_prompts = load_prompts(Path(f"prompt_info/{prefix}{choice}.txt"))
+            all_prompts = load_prompts(Path(f"{os.getcwd()}/prompt_info/{prefix}{choice}.txt"))
             chosen_prompt = random.choice(all_prompts)
 
             print("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
