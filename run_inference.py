@@ -210,9 +210,11 @@ def generate_all_images(
 
             print("OPENING IMAGE")
             try:
-                filter_image = Image.open(f"filters/tested/{filter_to_use}.jpeg")
+                filter_image = Image.open(f"{os.getcwd()}/filters/tested/{filter_to_use}.jpeg")
             except:
-                filter_image = Image.open(f"filters/tested/{filter_to_use}.jpg")
+                filter_image = Image.open(f"{os.getcwd()}/filters/tested/{filter_to_use}.jpg")
+
+            print("OPENED IMAGE")
 
             image = run_sd_config(
                 runtime_sm_client, model_name, config, filter_image, endpoint_name
