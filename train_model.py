@@ -99,6 +99,8 @@ def check_job_status():
         res2 = requests.get(job_url, headers=headers)
         loaded_resp = json.loads(res2.text)
         state = loaded_resp["state"]
+
+        print(f"User ID {user_id} is in state: {state}")
         if state == "failure":
             mongo_upsert(
                 "UserTrainingJobs", {"user_id": user_id}, {"training_status": "failure"}

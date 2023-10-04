@@ -755,7 +755,7 @@ def get_leaderboard():
         )
     )
 
-    return { "leaderboard": leaderboard_map_list }, 200
+    return {"leaderboard": leaderboard_map_list}, 200
 
 
 @app.route("/profile/<user_id>", methods=["GET"])

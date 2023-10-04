@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import random
+from pathlib import Path
 import time
 from io import BytesIO
 
@@ -152,19 +153,19 @@ def generate_all_images(
         if pref in replace_dict:
             user_prefs[i] = replace_dict[pref]
 
-    print("READ USER INGO")
+    print("READ USER INFO")
 
     gender = user.get("gender", "girl").strip().lower()
 
     prefix = "female_"
     style_map = girl_styles
     extra_styles = full_girl_styles
-    starter_file = f"prompt_info/female_starter_map.json"
+    starter_file = Path(f"prompt_info/female_starter_map.json")
     if gender == "boy":
         prefix = ""
         style_map = boy_styles
         extra_styles = full_boy_styles
-        starter_file = f"prompt_info/starter_map.json"
+        starter_file = Path(f"prompt_info/starter_map.json")
 
     print(f"LOADING STARTER MAP {starter_file}")
 
@@ -194,7 +195,7 @@ def generate_all_images(
             style = random.choice(style_options)
 
             print("LOADING PROMPTS FROM LIST")
-            all_prompts = load_prompts(f"prompt_info/{prefix}{choice}.txt")
+            all_prompts = load_prompts(Path(f"prompt_info/{prefix}{choice}.txt"))
             chosen_prompt = random.choice(all_prompts)
 
             print("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
