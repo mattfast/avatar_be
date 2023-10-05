@@ -158,15 +158,20 @@ def generate_all_images(
 
     gender = user.get("gender", "girl").strip().lower()
 
+    print("OPENING IMAGE")
+    curr_directory = os.getcwd()
+    if curr_directory == "":
+        curr_directory = "."
+
     prefix = "female_"
     style_map = girl_styles
     extra_styles = full_girl_styles
-    starter_file = Path(f"prompt_info/female_starter_map.json")
+    starter_file = Path(f"{curr_directory}/prompt_info/female_starter_map.json")
     if gender == "boy":
         prefix = ""
         style_map = boy_styles
         extra_styles = full_boy_styles
-        starter_file = Path(f"{os.getcwd()}/prompt_info/starter_map.json")
+        starter_file = Path(f"{curr_directory}/prompt_info/starter_map.json")
 
     print(f"LOADING STARTER MAP {starter_file}")
 
@@ -196,7 +201,7 @@ def generate_all_images(
             style = random.choice(style_options)
 
             print("LOADING PROMPTS FROM LIST")
-            all_prompts = load_prompts(Path(f"{os.getcwd()}/prompt_info/{prefix}{choice}.txt"))
+            all_prompts = load_prompts(Path(f"{curr_directory}/prompt_info/{prefix}{choice}.txt"))
             chosen_prompt = random.choice(all_prompts)
 
             print("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
@@ -208,11 +213,10 @@ def generate_all_images(
             else:
                 filter_to_use = random.choice(list(starter_map[choice][style]))
 
-            print("OPENING IMAGE")
             try:
-                filter_image = Image.open(f"{os.getcwd()}/filters/tested/{filter_to_use}.jpeg")
+                filter_image = Image.open(f"{curr_directory}/filters/tested/{filter_to_use}.jpeg")
             except:
-                filter_image = Image.open(f"{os.getcwd()}/filters/tested/{filter_to_use}.jpg")
+                filter_image = Image.open(f"{curr_directory}/filters/tested/{filter_to_use}.jpg")
 
             print("OPENED IMAGE")
 
