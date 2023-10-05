@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import logging
 import os
 import random
 from pathlib import Path
@@ -28,6 +29,8 @@ s3 = boto3.client(
     region_name="us-east-1",
     service_name="s3",
 )
+
+logging.basicConfig(level=logging.INFO)
 
 
 class StableDiffusionRunConfig:
@@ -144,7 +147,7 @@ def construct_config_from_prompt_style(prompt: str, style_map: dict, style: str)
 def generate_all_images(
     user_id, endpoint_name: str = "stable-diffusion-mme-ep-2023-09-28-00-43-55"
 ):
-    print("ENTERED GENERATION")
+    logging.info("ENTERED GENERATION")
     user = mongo_read("Users", {"user_id": user_id})
     user_prefs = user.get(
         "image_config", ["warrior", "athlete", "magic", "princess", "king", "cowboy"]
@@ -154,11 +157,11 @@ def generate_all_images(
         if pref in replace_dict:
             user_prefs[i] = replace_dict[pref]
 
-    print("READ USER INFO")
+    logging.info("READ USER INFO")
 
     gender = user.get("gender", "girl").strip().lower()
 
-    print("OPENING IMAGE")
+    logging.info("OPENING IMAGE")
     curr_directory = "."
 
     prefix = "female_"
