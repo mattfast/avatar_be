@@ -23,7 +23,7 @@ headers = {
     "authorization": f"Bearer {dreamlook_api_key}",
 }
 
-model_folder_name = "packaged_models"
+model_folder_name = "/home/ubuntu/avatar_be/packaged_models"
 
 
 sagemaker_session = sagemaker.Session(
@@ -41,8 +41,9 @@ def package_model(user_id):
     except:
         number_of_folders = 0
 
+    logging.info(f"Number of folders {number_of_folders}")
+
     if number_of_folders >= 10:
-        logging.info(f"Number of folders {number_of_folders}")
         return
 
     training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
@@ -98,7 +99,7 @@ def package_model(user_id):
                 file.write(chunk)
 
         logging.info("Writing tar file")
-        save_file_name = f"packaged_models/{user_id}.tar.gz"
+        save_file_name = f"/home/ubuntu/avatar_be/packaged_models/{user_id}.tar.gz"
         with tarfile.open(save_file_name, "w:gz") as tar:
             tar.add(base_path, arcname=os.path.basename(base_path))
 
