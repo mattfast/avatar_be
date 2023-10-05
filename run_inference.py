@@ -159,9 +159,7 @@ def generate_all_images(
     gender = user.get("gender", "girl").strip().lower()
 
     print("OPENING IMAGE")
-    curr_directory = os.getcwd()
-    if curr_directory == "":
-        curr_directory = "."
+    curr_directory = "."
 
     prefix = "female_"
     style_map = girl_styles
