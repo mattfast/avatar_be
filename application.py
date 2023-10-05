@@ -129,8 +129,8 @@ def validate_cookie():
     if user is None:
         return "user doesn't exist", 400
 
-    gender = user.get("gender", None)
-    if gender is None:
+    images_generated = user.get("images_generated", None)
+    if images_generated is None:
         return "user hasn't completed signup", 400
 
     return {"user_id": user.get("user_id", None)}, 200
@@ -168,6 +168,7 @@ def get_user_route():
         "first_name": user.get("first_name", None),
         "last_name": user.get("last_name", None),
         "gender": user.get("gender", None),
+        "images_generated": user.get("images_generated", None),
         "images_uploaded": user.get("images_uploaded", None),
         "user_id": user.get("user_id", None),
         "regenerations": user.get("regenerations", 0),
@@ -276,43 +277,27 @@ def generate_feed():
     if cookie is None:
         return "cookie missing", 400
 
-    print("here1")
-
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
-
-    print("here2")
 
     user_id = user.get("user_id", None)
     if user_id is None:
         return "search param db entry invalid", 500
 
-    print("here3")
-
     # check if it's too soon to view feed again
     feed_available_at = user.get("feed_available_at", None)
     now = datetime.now()
 
-    print(feed_available_at)
-    print(now)
     if feed_available_at is not None and feed_available_at > now:
         return {"user_list": [], "ready_at": feed_available_at, "is_final": False}, 200
-
-    print("here4")
 
     # if feed has already been generated, return it
     feed = user.get("feed", None)
     feed_index = user.get("feed_index", 0)
 
-    print("FEED")
-    print(feed)
-    print("FEED INDEX")
-    print(feed_index)
     if feed is not None and len(feed) > 0:
         return {"user_list": feed, "feed_index": feed_index}, 200
-
-    print("here5")
 
     # GENERATE FEED
     # retrieve existing votes
@@ -327,7 +312,7 @@ def generate_feed():
     # find users not voted on yet
     users_not_voted = mongo_read(
         "Users",
-        {"user_id": {"$nin": voted_on}, "gender": {"$exists": True}},
+        {"user_id": {"$nin": voted_on}, "images_generated": True },
         find_many=True,
     )
     users_list = list(users_not_voted)
