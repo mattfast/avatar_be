@@ -119,6 +119,7 @@ def run_sd_config(
             except Exception as e:
                 if "ModelError" in str(e):
                     logging.info("ERROR")
+                    logging.info(e)
                     time.sleep(2)
                     continue
                 logging.info(str(e))
