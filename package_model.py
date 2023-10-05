@@ -98,7 +98,7 @@ def package_model(user_id):
             for chunk in response.iter_content(chunk_size=10 * 1024):
                 file.write(chunk)
 
-        logging.info("Writing tar file")
+        logging.info("Writing tar files")
         save_file_name = f"/home/ubuntu/avatar_be/packaged_models/{user_id}.tar.gz"
         with tarfile.open(save_file_name, "w:gz") as tar:
             tar.add(base_path, arcname=os.path.basename(base_path))
