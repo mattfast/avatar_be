@@ -104,7 +104,7 @@ def run_sd_config(
         image = None
         while True:
             try:
-                print(
+                logging.info(
                     f"Generating Image {i} for {model_name} with {run_config.style} style...."
                 )
                 response = runtime_sm_client.invoke_endpoint(
@@ -118,10 +118,10 @@ def run_sd_config(
                 break
             except Exception as e:
                 if "ModelError" in str(e):
-                    print("ERROR")
+                    logging.info("ERROR")
                     time.sleep(2)
                     continue
-                print(str(e))
+                logging.info(str(e))
                 break
 
         return image
@@ -162,7 +162,9 @@ def generate_all_images(
     gender = user.get("gender", "girl").strip().lower()
 
     logging.info("OPENING IMAGE")
-    curr_directory = "."
+    curr_directory = "/home/ubuntu/avatar_be"
+
+    logging.info(os.getcwd())
 
     prefix = "female_"
     style_map = girl_styles
@@ -174,7 +176,7 @@ def generate_all_images(
         extra_styles = full_boy_styles
         starter_file = Path(f"{curr_directory}/prompt_info/starter_map.json")
 
-    print(f"LOADING STARTER MAP {starter_file}")
+    logging.info(f"LOADING STARTER MAP {starter_file}")
 
     model_name = f"{user_id}.tar.gz"
 
@@ -184,7 +186,7 @@ def generate_all_images(
     with open(starter_file, "r") as f:
         starter_map = json.load(f)
 
-    print("LOADED STARTER MAP FILE")
+    logging.info("LOADED STARTER MAP FILE")
 
     mongo_upsert(
         "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "started"}
@@ -194,18 +196,18 @@ def generate_all_images(
         # Generate 10 images for the user
         for i in range(10):
             key = f"{user_id}/profile_{i}.png"
-            print("CHOOSING RANDOM CATEGORY FROM LIST")
+            logging.info("CHOOSING RANDOM CATEGORY FROM LIST")
             choice = random.choice(actual_choice_list)
             style_options = list(starter_map[choice].keys()) + extra_styles
 
-            print("CHOOSING RANDOM STYLE FROM LIST")
+            logging.info("CHOOSING RANDOM STYLE FROM LIST")
             style = random.choice(style_options)
 
-            print("LOADING PROMPTS FROM LIST")
+            logging.info("LOADING PROMPTS FROM LIST")
             all_prompts = load_prompts(Path(f"{curr_directory}/prompt_info/{prefix}{choice}.txt"))
             chosen_prompt = random.choice(all_prompts)
 
-            print("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
+            logging.info("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
             config = construct_config_from_prompt_style(chosen_prompt, style_map, style)
 
             # Random Extra styles not in the starter map
@@ -219,7 +221,7 @@ def generate_all_images(
             except:
                 filter_image = Image.open(f"{curr_directory}/filters/tested/{filter_to_use}.jpg")
 
-            print("OPENED IMAGE")
+            logging.info("OPENED IMAGE")
 
             image = run_sd_config(
                 runtime_sm_client, model_name, config, filter_image, endpoint_name
@@ -240,8 +242,8 @@ def generate_all_images(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
         )
     except Exception as e:
-        print("EXCEPTION GENERATED")
-        print(e)
+        logging.info("EXCEPTION GENERATED")
+        logging.info(e)
         mongo_upsert(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "failure"}
         )
