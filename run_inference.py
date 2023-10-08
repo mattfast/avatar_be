@@ -4,11 +4,10 @@ import json
 import logging
 import os
 import random
-from pathlib import Path
 import time
 from io import BytesIO
+from pathlib import Path
 from uuid import uuid4
-
 
 import boto3
 from PIL import Image
@@ -20,7 +19,7 @@ from constants import (
     full_girl_styles,
     girl_styles,
 )
-from dbs.mongo import mongo_read, mongo_upsert
+from dbs.mongo import mongo_count, mongo_read, mongo_upsert
 from messaging import TextType, send_message
 
 runtime_sm_client = boto3.client(
@@ -73,6 +72,32 @@ def decode_image(img):
     return image
 
 
+ENV_STR = "/tmp/conda/sd_env.tar.gz"  # With this error -> Load ENV, wait and continue
+READ_TIMEOUT_STR = "timeout on endpoint URL"  # Endpoint is down. Move to the next endpoint (or wait 10 minutes and retry)
+MAX_RETRIES_STR = "(reached max retries: 4)"  # Endpoint is down. Move to the next endpoint (or wait 10 minutes and retry)
+
+# For Variant Error
+GENERIC_EXCEPTION = (
+    "exception"  # First error on max retries, model has not loaded completely yet
+)
+VARIANT_STR = "Variant"  # Second error on max retries, model is starting to load
+MODEL_ERROR = "ModelError"  # other generic errors, just retry after 10 seconds
+
+
+def switch_to_next_endpoint(curr_endpoint: str) -> None:
+    endpoint_to_use = mongo_read("Endpoints", {"endpoint_name": curr_endpoint})
+
+    num_endpoints = mongo_count("Endpoints")
+    next_endpoint_id = (endpoint_to_use.get("num_id", 0) + 1) % num_endpoints
+
+    logging.info(f"Changed NEXT ENDPOINT TO {next_endpoint_id}")
+
+    # Update current endpoint to not be used
+    mongo_upsert("Endpoints", {"endpoint_name": curr_endpoint}, {"in_use": False})
+    mongo_upsert("Endpoints", {"num_id": next_endpoint_id}, {"in_use": True})
+    return
+
+
 def run_sd_config(
     runtime_sm_client,
     model_name,
@@ -107,9 +132,6 @@ def run_sd_config(
         image = None
         while True:
             try:
-                logging.info(
-                    f"Generating Image {i} for {model_name} with {run_config.style} style...."
-                )
                 response = runtime_sm_client.invoke_endpoint(
                     EndpointName=endpoint_name,
                     ContentType="application/octet-stream",
@@ -120,14 +142,27 @@ def run_sd_config(
                 image = decode_image(output[0]["data"][0])
                 break
             except Exception as e:
-                if "ModelError" in str(e):
-                    logging.info("ERROR")
+                except_str = str(e)
+                logging.info(except_str)
+                if ENV_STR in except_str:
+                    logging.info("ENV LOADING ERROR")
                     logging.info(e)
                     backup_setup(runtime_sm_client, endpoint_name)
-                    time.sleep(60)
+                    time.sleep(40)
                     continue
-                logging.info(str(e))
-                break
+                elif READ_TIMEOUT_STR in except_str or MAX_RETRIES_STR in except_str:
+                    logging.info("REQUEST PROCESSING ERROR")
+                    logging.info(e)
+                elif MODEL_ERROR in except_str:
+                    logging.info("Generic Model Error")
+                    logging.info(e)
+                    time.sleep(5)
+                    continue
+                else:
+                    logging.info("Another Error")
+                    logging.info(e)
+
+                return None
 
         return image
 
@@ -170,13 +205,19 @@ def backup_setup(runtime_sm_client, endpoint_name: str):
     logging.info(response)
 
 
-def generate_all_images(
-    user_id, endpoint_name: str = "stable-diffusion-mme-ep-2023-09-28-00-43-55"
-):
+def get_current_endpoint_to_use() -> str:
+    endpoint_to_use = mongo_read("Endpoints", {"in_use": True})
+
+    if endpoint_to_use is None:
+        return None
+    return endpoint_to_use.get("endpoint_name", None)
+
+
+def generate_all_images(user_id):
     mongo_upsert(
         "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "started"}
     )
-        
+
     logging.info("ENTERED GENERATION")
     user = mongo_read("Users", {"user_id": user_id})
     user_prefs = user.get(
@@ -187,14 +228,22 @@ def generate_all_images(
         if pref in replace_dict:
             user_prefs[i] = replace_dict[pref]
 
+    logging.info("GETTING ENDPOINT")
+    endpoint_name = get_current_endpoint_to_use()
+    logging.info(f"GOT ENDPOINT {endpoint_name}")
+
+    if endpoint_name is None:
+        logging.info("NO ENDPOINT NAME")
+        mongo_upsert(
+            "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "failure"}
+        )
+        return
+
     logging.info("READ USER INFO")
 
     gender = user.get("gender", "girl").strip().lower()
 
-    logging.info("OPENING IMAGE")
     curr_directory = "/home/ubuntu/avatar_be"
-
-    logging.info(os.getcwd())
 
     prefix = "female_"
     style_map = girl_styles
@@ -230,7 +279,9 @@ def generate_all_images(
             style = random.choice(style_options)
 
             logging.info("LOADING PROMPTS FROM LIST")
-            all_prompts = load_prompts(Path(f"{curr_directory}/prompt_info/{prefix}{choice}.txt"))
+            all_prompts = load_prompts(
+                Path(f"{curr_directory}/prompt_info/{prefix}{choice}.txt")
+            )
             chosen_prompt = random.choice(all_prompts)
 
             logging.info("CHOOSING RANDOM PROMPT AND CONSTRUCTING CONFIG")
@@ -242,16 +293,34 @@ def generate_all_images(
             else:
                 filter_to_use = random.choice(list(starter_map[choice][style]))
 
+            logging.info("OPENING IMAGE")
             try:
-                filter_image = Image.open(f"{curr_directory}/filters/tested/{filter_to_use}.jpeg")
+                filter_image = Image.open(
+                    f"{curr_directory}/filters/tested/{filter_to_use}.jpeg"
+                )
             except:
-                filter_image = Image.open(f"{curr_directory}/filters/tested/{filter_to_use}.jpg")
+                filter_image = Image.open(
+                    f"{curr_directory}/filters/tested/{filter_to_use}.jpg"
+                )
 
             logging.info("OPENED IMAGE")
 
+            logging.info(
+                f"Generating Image {i} for {model_name} with {config.style} style...."
+            )
             image = run_sd_config(
                 runtime_sm_client, model_name, config, filter_image, endpoint_name
             )
+
+            if image is None:
+                logging.info(f"Inference for user id {user_id} failed, switching to another endpoint")
+                switch_to_next_endpoint(curr_endpoint=endpoint_name)
+                mongo_upsert(
+                    "UserTrainingJobs",
+                    {"user_id": user_id},
+                    {"generation_status": "failure"},
+                )
+                return
 
             in_mem_file = io.BytesIO()
             image.save(in_mem_file, format="JPEG")
@@ -270,7 +339,9 @@ def generate_all_images(
 
         # update user entry
         mongo_upsert(
-            "Users", {"user_id": user_id}, {"images_generated": True, "primary_image": 0}
+            "Users",
+            {"user_id": user_id},
+            {"images_generated": True, "primary_image": 0},
         )
 
         # notify user
@@ -294,3 +365,4 @@ def generate_all_images(
         mongo_upsert(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "failure"}
         )
+        return
