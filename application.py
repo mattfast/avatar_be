@@ -19,6 +19,7 @@ from package_model import package_model
 from run_inference import generate_all_images
 from train_model import check_job_status, post_request
 from users import get_top_users, get_user
+from scripts.main import run_training_job_script
 
 app = Flask(__name__)
 CORS(app)
@@ -813,6 +814,79 @@ def regenerate_image():
         )
 
     return "done", 200
+
+@app.route("/train-user-models", methods=["POST"])
+def train_user_models():
+    training_thread = threading.Thread(target=run_training_job_script)
+    training_thread.start()
+    return "training script started", 201
+    
+
+# Upload User Model to s3
+@app.route("/upload-models", methods=["POST"])
+def upload_models():
+    data = request.json
+    ip = data.get("ip", None)
+    if ip is None:
+        return "no ip", 400
+    
+    current_jobs = mongo_read(
+        "UserTrainingJobs", { "upload_ip": ip, "upload_status": "started" }, find_many=True
+    )
+
+    if len(current_jobs) >= 2:
+        return "too many jobs", 503
+
+    new_job = mongo_read(
+        "UserTrainingJobs", {"training_status": "success", "upload_status": { "$ne": "started" }, "upload_status": { "$ne": "success" }}, find_many=True
+    )
+    user_id = new_job.get("user_id", None)
+    if user_id is None:
+        return "user_id missing", 500
+    
+    mongo_upsert(
+        "UserTrainingJobs", { "user_id": user_id }, { "upload_ip": ip }
+    )
+
+    package_thread = threading.Thread(target=package_model, args=[user_id])
+    package_thread.start()
+    return "upload started", 201
+
+# Run user inference
+@app.route("/run-inferences", methods=["POST"])
+def run_inferences():
+    data = request.json
+    endpoint_name = data.get(
+        "endpoint_name", "stable-diffusion-mme-ep-2023-09-28-00-43-55"
+    )
+
+    generation_jobs = mongo_read(
+        "UserTrainingJobs", { "generation_status": "started" }, find_many=True
+    )
+
+    if len(generation_jobs) > 0:
+        return "generation job already running", 503
+    
+    job = mongo_read(
+        "UserTrainingJobs", { "generation_status": { "$ne": "success" } }
+    )
+
+    user_id = job.get("user_id", None)
+    if user_id is None:
+        return "user_id missing", 500
+
+    inference_thread = threading.Thread(
+        target=generate_all_images, args=[user_id, endpoint_name]
+    )
+    inference_thread.start()
+    return "inference started", 201
+
+# Try to call at a specific cadence
+@app.route("/check-jobs", methods=["POST"])
+def check_jobs():
+    check_job_status()
+    return "check jobs", 201
+
 
 
 # Kickoff user training

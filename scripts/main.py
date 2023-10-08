@@ -18,19 +18,23 @@ parser = argparse.ArgumentParser()
 
 
 def run_training_job_script():
+    all_users = mongo_read("Users", {"images_uploaded": True}, find_many=True)
+    for user in all_users:
+        user_id = user.get("user_id")
+        training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
+        if training_job is None:
+            print(f"POSTING TRAINING REQUEST FOR {user_id}")
+            post_request(user_id)
+            continue
+        training_status = training_job.get("training_status")
+        if training_status == "failure":
+            print(f"POSTING TRAINING REQUEST FOR PREVIOUSLY FAILED {user_id}")
+            post_request(user_id)
+
+
+def run_training_job_script_loop():
     while True:
-        all_users = mongo_read("Users", {"images_uploaded": True}, find_many=True)
-        for user in all_users:
-            user_id = user.get("user_id")
-            training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
-            if training_job is None:
-                print(f"POSTING TRAINING REQUEST FOR {user_id}")
-                post_request(user_id)
-                continue
-            training_status = training_job.get("training_status")
-            if training_status == "failure":
-                print(f"POSTING TRAINING REQUEST FOR PREVIOUSLY FAILED {user_id}")
-                post_request(user_id)
+        run_training_job_script()
 
 
 def check_jobs():
@@ -157,7 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.train:
-        training_thread = threading.Thread(target=run_training_job_script)
+        training_thread = threading.Thread(target=run_training_job_script_loop)
         training_thread.start()
     if args.check:
         check_thread = threading.Thread(target=check_jobs)

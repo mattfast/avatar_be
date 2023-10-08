@@ -170,6 +170,10 @@ def backup_setup(runtime_sm_client, endpoint_name: str):
 def generate_all_images(
     user_id, endpoint_name: str = "stable-diffusion-mme-ep-2023-09-28-00-43-55"
 ):
+    mongo_upsert(
+        "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "started"}
+    )
+        
     logging.info("ENTERED GENERATION")
     user = mongo_read("Users", {"user_id": user_id})
     user_prefs = user.get(
@@ -210,10 +214,6 @@ def generate_all_images(
         starter_map = json.load(f)
 
     logging.info("LOADED STARTER MAP FILE")
-
-    mongo_upsert(
-        "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "started"}
-    )
 
     try:
         # Generate 10 images for the user
