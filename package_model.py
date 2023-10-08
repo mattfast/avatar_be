@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import shutil
 import tarfile
@@ -8,7 +9,6 @@ from pathlib import Path
 import boto3
 import requests
 import sagemaker
-import logging
 
 from dbs.mongo import mongo_read, mongo_upsert
 
