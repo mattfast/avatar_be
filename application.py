@@ -172,7 +172,7 @@ def get_user_route():
         "images_generated": user.get("images_generated", None),
         "images_uploaded": user.get("images_uploaded", None),
         "user_id": user.get("user_id", None),
-        "regenerations": user.get("regenerations", 0),
+        "primary_image": user.get("primary_image", 0),
     }, 200
 
 
@@ -323,7 +323,7 @@ def generate_feed():
                 "user_id": u.get("user_id", ""),
                 "first_name": u.get("first_name", ""),
                 "last_name": u.get("last_name", ""),
-                "regenerations": u.get("regenerations", 0),
+                "primary_image": u.get("primary_image", 0),
             },
             users_list,
         )
@@ -736,7 +736,7 @@ def get_leaderboard():
                 "user_id": l["user_id"],
                 "first_name": l["first_name"],
                 "last_name": l["last_name"],
-                "regenerations": l.get("regenerations", 0),
+                "primary_image": l.get("primary_image", 0),
             },
             leaderboard_list,
         )
@@ -789,29 +789,35 @@ def profile(user_id):
         "themes": profile.get("image_config", None),
         "first_name": profile.get("first_name", None),
         "last_name": profile.get("last_name", None),
-        "regenerations": profile.get("regenerations", 0),
+        "primary_image": profile.get("primary_image", 0),
         "position": pos,
     }, 200
 
 
-@app.route("/regenerate-image", methods=["POST"])
-def regenerate_image():
+@app.route("/set-primary-image", methods=["POST"])
+def set_primary_image():
 
     cookie = request.headers.get("auth-token")
     if cookie is None:
         return "cookie missing", 400
-
+    
     user = get_user(cookie)
     if user is None:
         return "user invalid", 401
+    
+    data = request.json
+    if data is None:
+        return "no data", 400
 
-    regenerations = user.get("regenerations", 0)
+    primary_image = data.get("primary_image", None)
+    if primary_image is None:
+        return "no primary_image", 400
 
-    if regenerations < 4:
+    if primary_image < 10 and primary_image >= 0:
         mongo_upsert(
             "Users",
             {"user_id": user.get("user_id", None)},
-            {"regenerations": regenerations + 1},
+            {"primary_image": primary_image},
         )
 
     return "done", 200
