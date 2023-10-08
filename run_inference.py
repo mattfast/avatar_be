@@ -268,6 +268,12 @@ def generate_all_images(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
         )
 
+        # update user entry
+        mongo_upsert(
+            "Users", {"user_id": user_id}, {"images_generated": True, "primary_image": 0}
+        )
+
+        # notify user
         text_id = str(uuid4())
         number = user.get("number", None)
         send_message(

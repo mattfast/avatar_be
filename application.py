@@ -927,6 +927,7 @@ def upload_model(user_id):
     return "upload started", 201
 
 
+
 # Run user inference
 @app.route("/run-inference/<user_id>", methods=["POST"])
 def run_inference(user_id):
@@ -939,14 +940,6 @@ def run_inference(user_id):
     )
     inference_thread.start()
     return "inference started", 201
-
-
-# Try to call at a specific cadence
-@app.route("/check-jobs", methods=["POST"])
-def check_jobs():
-    check_job_status()
-    return "check jobs", 201
-
 
 ## CHECK METHODS
 @app.route("/send-tiktoks-check", methods=["POST"])
