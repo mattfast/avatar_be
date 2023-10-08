@@ -7,6 +7,7 @@ import random
 import time
 from io import BytesIO
 from pathlib import Path
+from uuid import uuid4
 
 import boto3
 from PIL import Image
@@ -19,6 +20,7 @@ from constants import (
     girl_styles,
 )
 from dbs.mongo import mongo_count, mongo_read, mongo_upsert
+from messaging import TextType, send_message
 
 runtime_sm_client = boto3.client(
     region_name="us-east-2",
@@ -85,13 +87,13 @@ MODEL_ERROR = "ModelError"  # other generic errors, just retry after 10 seconds
 def switch_to_next_endpoint(curr_endpoint: str) -> None:
     endpoint_to_use = mongo_read("Endpoints", {"endpoint_name": curr_endpoint})
 
-    # Update current endpoint to not be used
-    mongo_upsert("Endpoints", {"endpoint_name": curr_endpoint}, {"in_use": False})
-
     num_endpoints = mongo_count("Endpoints")
     next_endpoint_id = (endpoint_to_use.get("num_id", 0) + 1) % num_endpoints
 
     logging.info(f"Changed NEXT ENDPOINT TO {next_endpoint_id}")
+
+    # Update current endpoint to not be used
+    mongo_upsert("Endpoints", {"endpoint_name": curr_endpoint}, {"in_use": False})
     mongo_upsert("Endpoints", {"num_id": next_endpoint_id}, {"in_use": True})
     return
 
@@ -205,6 +207,9 @@ def backup_setup(runtime_sm_client, endpoint_name: str):
 
 def get_current_endpoint_to_use() -> str:
     endpoint_to_use = mongo_read("Endpoints", {"in_use": True})
+
+    if endpoint_to_use is None:
+        return None
     return endpoint_to_use.get("endpoint_name", None)
 
 
@@ -226,6 +231,13 @@ def generate_all_images(user_id):
     logging.info("GETTING ENDPOINT")
     endpoint_name = get_current_endpoint_to_use()
     logging.info(f"GOT ENDPOINT {endpoint_name}")
+
+    if endpoint_name is None:
+        logging.info("NO ENDPOINT NAME")
+        mongo_upsert(
+            "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "failure"}
+        )
+        return
 
     logging.info("READ USER INFO")
 
@@ -322,6 +334,29 @@ def generate_all_images(user_id):
             )
         mongo_upsert(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
+        )
+
+        # update user entry
+        mongo_upsert(
+            "Users",
+            {"user_id": user_id},
+            {"images_generated": True, "primary_image": 0},
+        )
+
+        # notify user
+        text_id = str(uuid4())
+        number = user.get("number", None)
+        send_message(
+            "🚨ALERT🚨 Your dopple is ready to view. Look here to see your options:",
+            "+1" + number,
+        )
+        send_message(
+            f"https://dopple.club/profile/${user_id}?t={text_id}",
+            "+1" + number,
+            message_type=TextType.ALERT,
+            user_id=user_id,
+            text_id=text_id,
+            log=True,
         )
     except Exception as e:
         logging.info("EXCEPTION GENERATED")

@@ -172,7 +172,7 @@ def get_user_route():
         "images_generated": user.get("images_generated", None),
         "images_uploaded": user.get("images_uploaded", None),
         "user_id": user.get("user_id", None),
-        "regenerations": user.get("regenerations", 0),
+        "primary_image": user.get("primary_image", 0),
     }, 200
 
 
@@ -323,7 +323,7 @@ def generate_feed():
                 "user_id": u.get("user_id", ""),
                 "first_name": u.get("first_name", ""),
                 "last_name": u.get("last_name", ""),
-                "regenerations": u.get("regenerations", 0),
+                "primary_image": u.get("primary_image", 0),
             },
             users_list,
         )
@@ -419,15 +419,16 @@ def send_text_blast():
             continue
 
         text_id = str(uuid4())
+        user_id = u.get("user_id", None)
         send_message(
-            "🚨ALERT🚨 Your dopple is ready to view. Look here to see yours and your friends':",
+            "🚨ALERT🚨 Your dopple is ready to view. Look here to see your options:",
             "+1" + num,
         )
         send_message(
-            f"https://dopple.club/vote?t={text_id}",
+            f"https://dopple.club/profile/${user_id}?t={text_id}",
             "+1" + u.get("number", ""),
             message_type=TextType.ALERT,
-            user_id=u.get("user_id", None),
+            user_id=user_id,
             text_id=text_id,
             log=True,
         )
@@ -735,7 +736,7 @@ def get_leaderboard():
                 "user_id": l["user_id"],
                 "first_name": l["first_name"],
                 "last_name": l["last_name"],
-                "regenerations": l.get("regenerations", 0),
+                "primary_image": l.get("primary_image", 0),
             },
             leaderboard_list,
         )
@@ -788,13 +789,13 @@ def profile(user_id):
         "themes": profile.get("image_config", None),
         "first_name": profile.get("first_name", None),
         "last_name": profile.get("last_name", None),
-        "regenerations": profile.get("regenerations", 0),
+        "primary_image": profile.get("primary_image", 0),
         "position": pos,
     }, 200
 
 
-@app.route("/regenerate-image", methods=["POST"])
-def regenerate_image():
+@app.route("/set-primary-image", methods=["POST"])
+def set_primary_image():
 
     cookie = request.headers.get("auth-token")
     if cookie is None:
@@ -804,13 +805,19 @@ def regenerate_image():
     if user is None:
         return "user invalid", 401
 
-    regenerations = user.get("regenerations", 0)
+    data = request.json
+    if data is None:
+        return "no data", 400
 
-    if regenerations < 4:
+    primary_image = data.get("primary_image", None)
+    if primary_image is None:
+        return "no primary_image", 400
+
+    if primary_image < 10 and primary_image >= 0:
         mongo_upsert(
             "Users",
             {"user_id": user.get("user_id", None)},
-            {"regenerations": regenerations + 1},
+            {"primary_image": primary_image},
         )
 
     return "done", 200
@@ -844,8 +851,15 @@ def upload_models():
         "UserTrainingJobs",
         {
             "training_status": "success",
-            "upload_status": {"$ne": "started"},
-            "upload_status": {"$ne": "success"},
+            "$or": [
+                {"upload_status": {"$exists": False}},
+                {
+                    "$and": [
+                        {"upload_status": {"$ne": "started"}},
+                        {"upload_status": {"$ne": "success"}},
+                    ]
+                },
+            ],
         },
         find_many=True,
     )
@@ -863,11 +877,6 @@ def upload_models():
 # Run user inference
 @app.route("/run-inferences", methods=["POST"])
 def run_inferences():
-    data = request.json
-    endpoint_name = data.get(
-        "endpoint_name", "stable-diffusion-mme-ep-2023-09-28-00-43-55"
-    )
-
     generation_jobs = mongo_read(
         "UserTrainingJobs", {"generation_status": "started"}, find_many=True
     )
@@ -875,15 +884,21 @@ def run_inferences():
     if len(generation_jobs) > 0:
         return "generation job already running", 503
 
-    job = mongo_read("UserTrainingJobs", {"generation_status": {"$ne": "success"}})
+    job = mongo_read(
+        "UserTrainingJobs",
+        {
+            "$or": [
+                {"generation_status": {"$exists": False}},
+                {"generation_status": {"$ne": "success"}},
+            ]
+        },
+    )
 
     user_id = job.get("user_id", None)
     if user_id is None:
         return "user_id missing", 500
 
-    inference_thread = threading.Thread(
-        target=generate_all_images, args=[user_id, endpoint_name]
-    )
+    inference_thread = threading.Thread(target=generate_all_images, args=[user_id])
     inference_thread.start()
     return "inference started", 201
 
@@ -912,22 +927,9 @@ def upload_model(user_id):
 # Run user inference
 @app.route("/run-inference/<user_id>", methods=["POST"])
 def run_inference(user_id):
-    data = request.json
-    endpoint_name = data.get(
-        "endpoint_name", "stable-diffusion-mme-ep-2023-09-28-00-43-55"
-    )
-    inference_thread = threading.Thread(
-        target=generate_all_images, args=[user_id, endpoint_name]
-    )
+    inference_thread = threading.Thread(target=generate_all_images, args=[user_id])
     inference_thread.start()
     return "inference started", 201
-
-
-# Try to call at a specific cadence
-@app.route("/check-jobs", methods=["POST"])
-def check_jobs():
-    check_job_status()
-    return "check jobs", 201
 
 
 ## CHECK METHODS
