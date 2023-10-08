@@ -419,15 +419,16 @@ def send_text_blast():
             continue
 
         text_id = str(uuid4())
+        user_id = u.get("user_id", None)
         send_message(
-            "🚨ALERT🚨 Your dopple is ready to view. Look here to see yours and your friends':",
+            "🚨ALERT🚨 Your dopple is ready to view. Look here to see your options:",
             "+1" + num,
         )
         send_message(
-            f"https://dopple.club/vote?t={text_id}",
+            f"https://dopple.club/profile/${user_id}?t={text_id}",
             "+1" + u.get("number", ""),
             message_type=TextType.ALERT,
-            user_id=u.get("user_id", None),
+            user_id=user_id,
             text_id=text_id,
             log=True,
         )
@@ -838,7 +839,20 @@ def upload_models():
         return "too many jobs", 503
 
     new_job = mongo_read(
-        "UserTrainingJobs", {"training_status": "success", "upload_status": { "$ne": "started" }, "upload_status": { "$ne": "success" }}, find_many=True
+        "UserTrainingJobs", 
+        {
+            "training_status": "success",
+            "$or": [
+                { "upload_status": { "$exists": False } },
+                {
+                    "$and": [
+                        { "upload_status": { "$ne": "started" } },
+                        { "upload_status": { "$ne": "success" } }
+                    ]
+                }
+            ]
+        },
+        find_many=True
     )
     user_id = new_job.get("user_id", None)
     if user_id is None:
@@ -868,7 +882,13 @@ def run_inferences():
         return "generation job already running", 503
     
     job = mongo_read(
-        "UserTrainingJobs", { "generation_status": { "$ne": "success" } }
+        "UserTrainingJobs", 
+        { 
+            "$or": [
+                { "generation_status": { "$exists": False } },
+                { "generation_status": { "$ne": "success" } }
+            ]
+        }
     )
 
     user_id = job.get("user_id", None)
@@ -886,8 +906,6 @@ def run_inferences():
 def check_jobs():
     check_job_status()
     return "check jobs", 201
-
-
 
 # Kickoff user training
 @app.route("/train-user-model/<user_id>", methods=["POST"])

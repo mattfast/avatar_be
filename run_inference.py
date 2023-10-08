@@ -7,6 +7,8 @@ import random
 from pathlib import Path
 import time
 from io import BytesIO
+from uuid import uuid4
+
 
 import boto3
 from PIL import Image
@@ -19,6 +21,7 @@ from constants import (
     girl_styles,
 )
 from dbs.mongo import mongo_read, mongo_upsert
+from messaging import TextType, send_message
 
 runtime_sm_client = boto3.client(
     region_name="us-east-2",
@@ -263,6 +266,21 @@ def generate_all_images(
             )
         mongo_upsert(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
+        )
+
+        text_id = str(uuid4())
+        number = user.get("number", None)
+        send_message(
+            "🚨ALERT🚨 Your dopple is ready to view. Look here to see your options:",
+            "+1" + number,
+        )
+        send_message(
+            f"https://dopple.club/profile/${user_id}?t={text_id}",
+            "+1" + number,
+            message_type=TextType.ALERT,
+            user_id=user_id,
+            text_id=text_id,
+            log=True,
         )
     except Exception as e:
         logging.info("EXCEPTION GENERATED")
