@@ -120,7 +120,8 @@ def run_sd_config(
                 if "ModelError" in str(e):
                     logging.info("ERROR")
                     logging.info(e)
-                    time.sleep(2)
+                    backup_setup(runtime_sm_client, endpoint_name)
+                    time.sleep(60)
                     continue
                 logging.info(str(e))
                 break
@@ -143,6 +144,27 @@ def construct_config_from_prompt_style(prompt: str, style_map: dict, style: str)
     else:
         full_prompt = style_map[style]["start"] + prompt + style_map[style]["end"]
     return StableDiffusionRunConfig(style=style, prompt=full_prompt)
+
+
+def backup_setup(runtime_sm_client, endpoint_name: str):
+    payload = {
+        "inputs": [
+            {
+                "name": "TEXT",
+                "shape": [1],
+                "datatype": "BYTES",
+                "data": ["hello"],  # dummy data not used by the model
+            }
+        ]
+    }
+
+    response = runtime_sm_client.invoke_endpoint(
+        EndpointName=endpoint_name,
+        ContentType="application/octet-stream",
+        Body=json.dumps(payload),
+        TargetModel="setup_conda.tar.gz",
+    )
+    logging.info(response)
 
 
 def generate_all_images(
