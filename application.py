@@ -844,7 +844,7 @@ def upload_models():
         find_many=True,
     )
 
-    if len(current_jobs) >= 2:
+    if len(list(current_jobs)) >= 2:
         return "too many jobs", 503
 
     new_job = mongo_read(
@@ -881,7 +881,7 @@ def run_inferences():
         "UserTrainingJobs", {"generation_status": "started"}, find_many=True
     )
 
-    if len(generation_jobs) > 0:
+    if len(list(generation_jobs)) > 0:
         return "generation job already running", 503
 
     job = mongo_read(
