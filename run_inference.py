@@ -313,6 +313,7 @@ def generate_all_images(user_id):
             )
 
             if image is None:
+                logging.info(f"Inference for user id {user_id} failed, switching to another endpoint")
                 switch_to_next_endpoint(curr_endpoint=endpoint_name)
                 mongo_upsert(
                     "UserTrainingJobs",
