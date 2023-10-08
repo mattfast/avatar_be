@@ -861,7 +861,6 @@ def upload_models():
                 },
             ],
         },
-        find_many=True,
     )
     user_id = new_job.get("user_id", None)
     if user_id is None:
