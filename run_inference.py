@@ -333,6 +333,8 @@ def generate_all_images(user_id):
                 Body=in_mem_file,
                 ContentType="image/jpeg",
             )
+
+        logging.info(f"SUCCESSFULLY GENERATED IMAGES for {user_id}. UPDATING.")
         mongo_upsert(
             "UserTrainingJobs", {"user_id": user_id}, {"generation_status": "success"}
         )
@@ -343,6 +345,7 @@ def generate_all_images(user_id):
             {"user_id": user_id},
             {"images_generated": True, "primary_image": 0},
         )
+        logging.info(f"UPDATED USER INFO for {user_id}. NOW SENDING TEXT")
 
         # notify user
         """
@@ -361,6 +364,9 @@ def generate_all_images(user_id):
             log=True,
         )
         """
+
+        logging.info(f"SENDING MESSAGE to {user_id}")
+
     except Exception as e:
         logging.info("EXCEPTION GENERATED")
         logging.info(e)
