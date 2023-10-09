@@ -880,7 +880,7 @@ def run_inferences():
         "UserTrainingJobs", {"generation_status": "started"}, find_many=True
     )
 
-    if generation_jobs is not None:
+    if generation_jobs is not None and len(list(generation_jobs)) > 0:
         return "generation job already running", 503
 
     job = mongo_read(
