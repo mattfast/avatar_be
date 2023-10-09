@@ -862,6 +862,9 @@ def upload_models():
             ],
         },
     )
+    if new_job is None:
+        "no jobs required", 200
+
     user_id = new_job.get("user_id", None)
     if user_id is None:
         return "user_id missing", 500
@@ -892,6 +895,8 @@ def run_inferences():
             ]
         },
     )
+    if job is None:
+        "no jobs required", 200
 
     user_id = job.get("user_id", None)
     if user_id is None:
