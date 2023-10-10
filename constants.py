@@ -74,21 +74,13 @@ styles = {
 
 random_funny_styles = [
     "mooing cow",
-    "ukj person as donkey from the movie shrek",
-    "ukj person as pinocchio from the movie shrek",
-    "ukj person as the three blind mice from the movie shrek",
-    "ukj person as funny fiona from the movie shrek",
 ]
 full_boy_styles = random_funny_styles + [
     "Bart Simpson",
-    "woody from toy story",
+    "ukj person as the three blind mice from the movie shrek",
     "ukj person as a princess from a disney movie",
 ]
-full_girl_styles = random_funny_styles + [
-    "Lisa Simpson",
-    "dory from finding nemo",
-    "jessie from toy story",
-]
+full_girl_styles = random_funny_styles + []
 
 girl_styles = deepcopy(styles)
 for style in full_girl_styles:
