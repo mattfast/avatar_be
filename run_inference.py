@@ -7,6 +7,7 @@ import random
 import time
 from io import BytesIO
 from pathlib import Path
+from typing import Optional
 from uuid import uuid4
 
 import boto3
@@ -55,6 +56,16 @@ class StableDiffusionRunConfig:
             self.strength = 0.9
             self.scale = 10
             self.steps = 90
+
+    def to_dict(self) -> dict:
+        return {
+            "full_prompt": self.prompt,
+            "style": self.style,
+            "negative_prompt": self.negative_prompt,
+            "strength": self.strength,
+            "scale": self.scale,
+            "steps": self.steps,
+        }
 
 
 # helper functions to encode and decode images
@@ -205,12 +216,27 @@ def backup_setup(runtime_sm_client, endpoint_name: str):
     logging.info(response)
 
 
-def get_current_endpoint_to_use() -> str:
+def get_current_endpoint_to_use() -> Optional[str]:
     endpoint_to_use = mongo_read("Endpoints", {"in_use": True})
 
     if endpoint_to_use is None:
         return None
     return endpoint_to_use.get("endpoint_name", None)
+
+
+def log_generation_info(
+    user_id: str, profile_id: int, config: StableDiffusionRunConfig, extra_info: dict
+):
+    """Log generation information to Mongo."""
+    dict_to_upsert = {
+        "user_id": user_id,
+        "profile_id": profile_id,
+        **config.to_dict(),
+        **extra_info,
+    }
+    mongo_upsert(
+        "GenerationInfo", {"user_id": user_id, "profile_id": profile_id}, dict_to_upsert
+    )
 
 
 def generate_all_images(user_id):
@@ -272,15 +298,15 @@ def generate_all_images(user_id):
         for i in range(10):
             key = f"{user_id}/profile_{i}.png"
             logging.info("CHOOSING RANDOM CATEGORY FROM LIST")
-            choice = random.choice(actual_choice_list)
-            style_options = list(starter_map[choice].keys()) + extra_styles
+            category = random.choice(actual_choice_list)
+            style_options = list(starter_map[category].keys()) + extra_styles
 
             logging.info("CHOOSING RANDOM STYLE FROM LIST")
             style = random.choice(style_options)
 
             logging.info("LOADING PROMPTS FROM LIST")
             all_prompts = load_prompts(
-                Path(f"{curr_directory}/prompt_info/{prefix}{choice}.txt")
+                Path(f"{curr_directory}/prompt_info/{prefix}{category}.txt")
             )
             chosen_prompt = random.choice(all_prompts)
 
@@ -291,7 +317,7 @@ def generate_all_images(user_id):
             if style in extra_styles:
                 filter_to_use = "tester"
             else:
-                filter_to_use = random.choice(list(starter_map[choice][style]))
+                filter_to_use = random.choice(list(starter_map[category][style]))
 
             logging.info("OPENING IMAGE")
             try:
@@ -313,7 +339,9 @@ def generate_all_images(user_id):
             )
 
             if image is None:
-                logging.info(f"Inference for user id {user_id} failed, switching to another endpoint")
+                logging.info(
+                    f"Inference for user id {user_id} failed, switching to another endpoint"
+                )
                 switch_to_next_endpoint(curr_endpoint=endpoint_name)
                 mongo_upsert(
                     "UserTrainingJobs",
@@ -325,6 +353,11 @@ def generate_all_images(user_id):
             in_mem_file = io.BytesIO()
             image.save(in_mem_file, format="JPEG")
             in_mem_file.seek(0)
+
+            # Upload Profile Info to mongo
+            log_generation_info(
+                user_id, i, config, {"category": category, "base_prompt": chosen_prompt}
+            )
 
             # Upload image to s3
             s3.put_object(
