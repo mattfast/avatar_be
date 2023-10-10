@@ -74,7 +74,6 @@ styles = {
 
 random_animal_styles = ["mooing cow", "stupid looking llama"]
 extra_boy_styles = random_animal_styles + [
-    "ukj person as the three blind mice from the movie shrek",
     "ukj person as a princess from a disney movie",
 ]
 extra_girl_styles = random_animal_styles + []
