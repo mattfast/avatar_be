@@ -298,7 +298,7 @@ def generate_all_images(user_id):
 
     # Profile of funny profiles that have been generated so far
     funny_profile_style_dict = {}
-    MAX_NUM_FUNNY_PROFILES = 3
+    MAX_NUM_FUNNY_PROFILES = 2
 
     try:
         num_funny_styles = 0
