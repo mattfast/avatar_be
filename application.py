@@ -889,10 +889,16 @@ def run_inferences():
     job = mongo_read(
         "UserTrainingJobs",
         {
-            "$or": [
-                {"generation_status": {"$exists": False}},
-                {"generation_status": {"$ne": "success"}},
+            "$and": [
+                { "upload_status": "success" },
+                {
+                    "$or": [
+                        { "generation_status": {"$exists": False} },
+                        { "generation_status": {"$ne": "success"} },
+                    ]
+                }
             ]
+
         },
     )
     if job is None:
