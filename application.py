@@ -313,7 +313,7 @@ def generate_feed():
     # find users not voted on yet
     users_not_voted = mongo_read(
         "Users",
-        {"user_id": {"$nin": voted_on}, "images_generated": True},
+        {"user_id": {"$nin": voted_on}, "images_generated": True, "active": { "$exists": False }},
         find_many=True,
     )
     users_list = list(users_not_voted)
@@ -406,7 +406,7 @@ def send_text_blast():
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
 
-    users = mongo_read("Users", {}, find_many=True)
+    users = mongo_read("Users", {"images_generated": True, "active": { "$exists": False }}, find_many=True)
 
     if users is None:
         return "users not found", 500
@@ -421,7 +421,7 @@ def send_text_blast():
         text_id = str(uuid4())
         user_id = u.get("user_id", None)
         send_message(
-            "🚨ALERT🚨 Your dopple is ready to view. Look here to see your options:",
+            "🚨ALERT🚨 Voting on dopples is now live. Look here to see your classmate's profiles:",
             "+1" + num,
         )
         send_message(
@@ -443,7 +443,7 @@ def send_feed_texts():
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
 
-    users = mongo_read("Users", {}, find_many=True)
+    users = mongo_read("Users", {"images_generated": True, "active": { "$exists": False }}, find_many=True)
 
     if users is None:
         return "users not found", 500
@@ -485,7 +485,7 @@ def send_update_texts():
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
 
-    users = mongo_read("Users", {}, find_many=True)
+    users = mongo_read("Users", {"images_generated": True, "active": { "$exists": False }}, find_many=True)
 
     if users is None:
         return "users not found", 500
@@ -702,7 +702,7 @@ def update_user():
     if gender is not None and number is not None:
         send_message("Thanks for signing up for dopple.club!", "+1" + number)
         send_message(
-            'Reply to this message with "YES" to make your experience better :)',
+            'Reply to this message with "YES" to finish registering :)',
             "+1" + number,
         )
 

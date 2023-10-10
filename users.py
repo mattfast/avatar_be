@@ -28,7 +28,7 @@ def get_users():
 
 def get_top_users(limit=100):
     sortFilter = [("Votes", DESCENDING)]
-    return mongo_read_sort("Users", {"images_generated": True}, sortFilter, limit=limit)
+    return mongo_read_sort("Users", {"images_generated": True, "active": { "$exists": False }}, sortFilter, limit=limit)
 
 
 def create_user(number):
