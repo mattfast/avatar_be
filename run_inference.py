@@ -16,9 +16,10 @@ from PIL import Image
 from constants import (
     boy_styles,
     default_negative,
-    full_boy_styles,
-    full_girl_styles,
+    extra_boy_styles,
+    extra_girl_styles,
     girl_styles,
+    random_animal_styles,
 )
 from dbs.mongo import mongo_count, mongo_read, mongo_upsert
 from messaging import TextType, send_message
@@ -273,12 +274,12 @@ def generate_all_images(user_id):
 
     prefix = "female_"
     style_map = girl_styles
-    extra_styles = full_girl_styles
+    extra_styles = extra_girl_styles
     starter_file = Path(f"{curr_directory}/prompt_info/female_starter_map.json")
     if gender == "boy":
         prefix = ""
         style_map = boy_styles
-        extra_styles = full_boy_styles
+        extra_styles = extra_boy_styles
         starter_file = Path(f"{curr_directory}/prompt_info/starter_map.json")
 
     logging.info(f"LOADING STARTER MAP {starter_file}")
@@ -293,16 +294,55 @@ def generate_all_images(user_id):
 
     logging.info("LOADED STARTER MAP FILE")
 
+    funny_profile_styles = ["stick_figure"] + extra_styles
+
+    # Profile of funny profiles that have been generated so far
+    funny_profile_style_dict = {}
+    MAX_NUM_FUNNY_PROFILES = 3
+
     try:
+        num_funny_styles = 0
+        has_animal_style = False
         # Generate 10 images for the user
         for i in range(10):
             key = f"{user_id}/profile_{i}.png"
             logging.info("CHOOSING RANDOM CATEGORY FROM LIST")
             category = random.choice(actual_choice_list)
-            style_options = list(starter_map[category].keys()) + extra_styles
 
-            logging.info("CHOOSING RANDOM STYLE FROM LIST")
-            style = random.choice(style_options)
+            while True:
+                # always generate a funny style at least once
+                if i == 9 and num_funny_styles == 0:
+                    style_options = funny_profile_styles
+                else:
+                    style_options = list(starter_map[category].keys()) + extra_styles
+
+                logging.info("CHOOSING RANDOM STYLE FROM LIST")
+                style = random.choice(style_options)
+
+                # Parse through funny styles
+                is_funny_style = style in funny_profile_styles
+                if is_funny_style:
+                    is_animal_style = style in random_animal_styles
+                    # Don't generate too many profiles
+                    # Don't generate the first profile as funny
+                    # Don't regenerate a funny profile that has already been generated
+                    # Only generat one animal style
+                    if num_funny_styles >= MAX_NUM_FUNNY_PROFILES:
+                        continue
+                    elif i == 0:
+                        continue
+                    elif style in funny_profile_style_dict:
+                        continue
+                    elif is_animal_style and has_animal_style:
+                        continue
+
+                    num_funny_styles += 1
+                    funny_profile_style_dict[style] = True
+                    if is_animal_style and not has_animal_style:
+                        has_animal_style = True
+                    break
+                else:
+                    break
 
             logging.info("LOADING PROMPTS FROM LIST")
             all_prompts = load_prompts(

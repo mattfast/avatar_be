@@ -72,25 +72,22 @@ styles = {
     "stick_figure": {"full_prompt": "a stick figure drawing", "no_prompt": True},
 }
 
-random_funny_styles = [
-    "mooing cow",
-]
-full_boy_styles = random_funny_styles + [
-    "Bart Simpson",
+random_animal_styles = ["mooing cow", "stupid looking llama"]
+extra_boy_styles = random_animal_styles + [
     "ukj person as the three blind mice from the movie shrek",
     "ukj person as a princess from a disney movie",
 ]
-full_girl_styles = random_funny_styles + []
+extra_girl_styles = random_animal_styles + []
 
 girl_styles = deepcopy(styles)
-for style in full_girl_styles:
+for style in extra_girl_styles:
     girl_styles[style] = {
         "full_prompt": styles["pixar"]["start"] + style + styles["pixar"]["end"],
         "no_prompt": True,
     }
 
 boy_styles = deepcopy(styles)
-for style in full_boy_styles:
+for style in extra_boy_styles:
     boy_styles[style] = {
         "full_prompt": styles["pixar"]["start"] + style + styles["pixar"]["end"],
         "no_prompt": True,

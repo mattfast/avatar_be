@@ -13,19 +13,6 @@
          "goodtime",
          "django"
       ],
-      "south_park": [
-         "spectre2",
-         "brad",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "spiderverse": [
          "spectre2",
          "brad",
@@ -44,17 +31,6 @@
          "spectre",
          "tester",
          "goodtime",
-         "django"
-      ],
-      "rickandmorty": [
-         "spectre2",
-         "brad",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "tester",
-         "night",
          "django"
       ],
       "2d": [
@@ -79,23 +55,6 @@
          "tester",
          "goodtime",
          "django"
-      ],
-      "claymation": [
-         "superman",
-         "brad",
-         "bond",
-         "wolf",
-         "her",
-         "spectre",
-         "tester"
-      ],
-      "pencil": [
-         "superman",
-         "brad",
-         "bond",
-         "dunkirk",
-         "tester",
-         "goodtime"
       ],
       "minecraft": [
          "brad",
@@ -127,9 +86,6 @@
          "goodtime",
          "night"
       ],
-      "graffiti": [
-         "spectre2"
-      ],
       "south_park": [
          "spectre2",
          "superman",
@@ -157,18 +113,6 @@
       "pixar": [
          "spectre2",
          "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
-      "claymation": [
-         "spectre2",
          "bond",
          "dunkirk",
          "wolf",
@@ -215,14 +159,6 @@
          "spectre",
          "goodtime"
       ],
-      "bw_photo": [
-         "spectre2",
-         "superman",
-         "dunkirk",
-         "tester",
-         "goodtime",
-         "django"
-      ],
       "magic": [
          "superman",
          "dunkirk",
@@ -247,16 +183,6 @@
          "spectre",
          "tester",
          "goodtime",
-         "django"
-      ],
-      "pencil": [
-         "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
          "django"
       ],
       "marvel": [
@@ -297,14 +223,6 @@
          "her",
          "tester"
       ],
-      "claymation": [
-         "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "tester"
-      ],
       "rickandmorty": [
          "superman",
          "bond",
@@ -316,13 +234,6 @@
       "magritte": [
          "superman",
          "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "tester"
-      ],
-      "pencil": [
-         "superman",
          "dunkirk",
          "wolf",
          "her",
@@ -368,11 +279,6 @@
          "goodtime",
          "django"
       ],
-      "graffiti": [
-         "spectre2",
-         "goodtime",
-         "django"
-      ],
       "magic": [
          "spectre2",
          "superman",
@@ -410,44 +316,11 @@
          "tester",
          "night"
       ],
-      "claymation": [
-         "spectre2",
-         "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
-      "rickandmorty": [
-         "spectre2",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "anime": [
          "spectre2",
          "superman",
          "her",
          "tester"
-      ],
-      "minecraft": [
-         "spectre2",
-         "dunkirk",
-         "spectre",
-         "tester",
-         "goodtime",
-         "django"
       ],
       "magritte": [
          "spectre2",
@@ -461,18 +334,6 @@
          "night",
          "django"
       ],
-      "bw_photo": [
-         "spectre2",
-         "superman",
-         "tester",
-         "goodtime"
-      ],
-      "2d": [
-         "superman",
-         "her",
-         "spectre",
-         "goodtime"
-      ],
       "south_park": [
          "bond",
          "dunkirk",
@@ -483,28 +344,15 @@
          "night",
          "django"
       ],
-      "pencil": [
-         "bond",
-         "dunkirk",
-         "tester",
-         "goodtime"
-      ],
       "ghibli": [
          "her",
          "tester",
          "goodtime"
-      ],
-      "marvel": [
-         "spectre"
       ]
    },
    "princess_prompts": {
       "stick_figure": [
          "margot_snap"
-      ],
-      "pop": [
-         "spectre2",
-         "tester"
       ],
       "magic": [
          "spectre2",
@@ -515,54 +363,14 @@
          "goodtime",
          "django"
       ],
-      "south_park": [
-         "bond",
-         "dunkirk",
-         "tester"
-      ],
-      "spiderverse": [
-         "bond",
-         "django"
-      ],
-      "rickandmorty": [
-         "bond",
-         "dunkirk",
-         "night"
-      ],
       "anime": [
          "bond",
          "tester"
-      ],
-      "minecraft": [
-         "bond",
-         "dunkirk",
-         "tester",
-         "goodtime"
-      ],
-      "2d": [
-         "bond"
-      ],
-      "magritte": [
-         "bond"
       ],
       "pixar": [
          "dunkirk",
          "her",
          "tester",
-         "night",
-         "django"
-      ],
-      "claymation": [
-         "her",
-         "goodtime"
-      ],
-      "bw_photo": [
-         "tester"
-      ],
-      "ghibli": [
-         "goodtime"
-      ],
-      "pencil": [
          "night",
          "django"
       ]
@@ -581,11 +389,6 @@
          "goodtime",
          "night"
       ],
-      "graffiti": [
-         "spectre2",
-         "tester",
-         "goodtime"
-      ],
       "south_park": [
          "spectre2",
          "bond",
@@ -622,37 +425,6 @@
          "tester",
          "night"
       ],
-      "claymation": [
-         "spectre2",
-         "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
-      "marvel": [
-         "spectre2",
-         "superman",
-         "bond",
-         "dunkirk",
-         "tester",
-         "goodtime"
-      ],
-      "rickandmorty": [
-         "spectre2",
-         "bond",
-         "wolf",
-         "her",
-         "spectre",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "anime": [
          "spectre2",
          "dunkirk",
@@ -682,25 +454,6 @@
          "night",
          "django"
       ],
-      "ghibli": [
-         "spectre2",
-         "dunkirk",
-         "tester",
-         "django"
-      ],
-      "magritte": [
-         "spectre2",
-         "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "pencil": [
          "spectre2",
          "superman",
@@ -708,14 +461,6 @@
          "dunkirk",
          "wolf",
          "spectre",
-         "tester",
-         "goodtime",
-         "django"
-      ],
-      "bw_photo": [
-         "spectre2",
-         "superman",
-         "dunkirk",
          "tester",
          "goodtime",
          "django"
