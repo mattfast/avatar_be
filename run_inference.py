@@ -298,13 +298,13 @@ def generate_all_images(user_id):
 
     # Profile of funny profiles that have been generated so far
     funny_profile_style_dict = {}
-    MAX_NUM_FUNNY_PROFILES = 2
+    MAX_NUM_FUNNY_PROFILES = 3
 
     try:
         num_funny_styles = 0
         has_animal_style = False
         # Generate 10 images for the user
-        for i in range(25):
+        for i in range(15):
             key = f"{user_id}/profile_{i}.png"
             logging.info("CHOOSING RANDOM CATEGORY FROM LIST")
             category = random.choice(actual_choice_list)
