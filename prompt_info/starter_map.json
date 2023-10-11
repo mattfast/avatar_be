@@ -3,6 +3,10 @@
       "stick_figure": [
          "margot_snap"
       ],
+      "pop": [
+         "tester",
+         "brad"
+      ],
       "impressionist": [
          "spectre2",
          "superman",
@@ -16,7 +20,6 @@
          "brad",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime",
          "django"
@@ -29,6 +32,9 @@
          "goodtime"
       ],
       "pixar": [
+         "tester"
+      ],
+      "spiderverse": [
          "tester"
       ]
    },
@@ -47,7 +53,6 @@
          "spectre2",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime"
       ],
@@ -56,7 +61,6 @@
          "superman",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime"
       ],
@@ -64,14 +68,12 @@
          "spectre2",
          "dunkirk",
          "her",
-         "spectre",
          "tester"
       ],
       "minecraft": [
          "spectre2",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime",
          "night",
@@ -81,7 +83,6 @@
          "superman",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime"
       ],
@@ -94,7 +95,6 @@
       "magritte": [
          "superman",
          "dunkirk",
-         "spectre",
          "tester",
          "goodtime"
       ],
@@ -167,13 +167,17 @@
       "stick_figure": [
          "margot_snap"
       ],
+      "pop": [
+         "superman",
+         "her",
+         "tester"
+      ],
       "magic": [
          "spectre2",
          "superman",
          "bond",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime",
          "django"
@@ -190,7 +194,6 @@
          "superman",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "night"
       ],
@@ -201,16 +204,17 @@
       "minecraft": [
          "spectre2",
          "dunkirk",
-         "spectre",
          "tester",
          "goodtime",
          "django"
+      ],
+      "south_park": [
+         "tester"
       ],
       "magritte": [
          "spectre2",
          "superman",
          "dunkirk",
-         "spectre",
          "tester",
          "goodtime",
          "night",
@@ -283,14 +287,12 @@
       "impressionist": [
          "spectre2",
          "bond",
-         "her",
-         "spectre"
+         "her"
       ],
       "pixar": [
          "spectre2",
          "superman",
          "dunkirk",
-         "spectre",
          "tester",
          "night"
       ],
@@ -311,7 +313,6 @@
          "superman",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime",
          "night",
@@ -330,7 +331,6 @@
          "superman",
          "dunkirk",
          "her",
-         "spectre",
          "tester",
          "goodtime",
          "night",
@@ -340,7 +340,6 @@
          "spectre2",
          "superman",
          "dunkirk",
-         "spectre",
          "tester",
          "goodtime",
          "django"
