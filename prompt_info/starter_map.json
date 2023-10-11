@@ -3,22 +3,6 @@
       "stick_figure": [
          "margot_snap"
       ],
-      "pop": [
-         "spectre2",
-         "superman",
-         "brad",
-         "tester",
-         "goodtime"
-      ],
-      "spiderverse": [
-         "spectre2",
-         "brad",
-         "bond",
-         "dunkirk",
-         "tester",
-         "goodtime",
-         "django"
-      ],
       "impressionist": [
          "spectre2",
          "superman",
@@ -42,7 +26,6 @@
       "pencil": [
          "superman",
          "brad",
-         "bond",
          "dunkirk",
          "tester",
          "goodtime"
@@ -57,16 +40,10 @@
       ],
       "pop": [
          "spectre2",
-         "bond",
          "her",
          "tester",
          "goodtime",
          "night"
-      ],
-      "south_park": [
-         "spectre2",
-         "superman",
-         "tester"
       ],
       "impressionist": [
          "spectre2",
@@ -80,7 +57,6 @@
       "pixar": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "spectre",
@@ -127,7 +103,6 @@
       ],
       "pencil": [
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "tester"
@@ -142,13 +117,11 @@
       ],
       "pop": [
          "superman",
-         "bond",
          "her",
          "tester"
       ],
       "magic": [
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "tester"
@@ -181,7 +154,6 @@
          "tester"
       ],
       "spiderverse": [
-         "bond",
          "her",
          "tester"
       ],
@@ -191,21 +163,12 @@
          "her"
       ],
       "ghibli": [
-         "bond",
          "her"
       ]
    },
    "king_prompts": {
       "stick_figure": [
          "margot_snap"
-      ],
-      "pop": [
-         "spectre2",
-         "superman",
-         "bond",
-         "tester",
-         "goodtime",
-         "django"
       ],
       "magic": [
          "spectre2",
@@ -217,12 +180,6 @@
          "tester",
          "goodtime",
          "django"
-      ],
-      "spiderverse": [
-         "spectre2",
-         "bond",
-         "her",
-         "night"
       ],
       "impressionist": [
          "spectre2",
@@ -239,12 +196,6 @@
          "her",
          "spectre",
          "tester",
-         "night"
-      ],
-      "rickandmorty": [
-         "spectre2",
-         "tester",
-         "goodtime",
          "night"
       ],
       "anime": [
@@ -268,16 +219,6 @@
          "goodtime",
          "night",
          "django"
-      ],
-      "pencil": [
-         "bond",
-         "tester",
-         "goodtime"
-      ],
-      "ghibli": [
-         "her",
-         "tester",
-         "goodtime"
       ]
    },
    "princess_prompts": {
@@ -290,39 +231,22 @@
       ],
       "magic": [
          "spectre2",
-         "bond",
          "dunkirk",
          "her",
          "tester",
          "goodtime",
          "django"
       ],
-      "south_park": [
-         "bond",
-         "dunkirk",
-         "tester"
-      ],
       "spiderverse": [
-         "bond",
          "django"
       ],
-      "rickandmorty": [
-         "bond",
-         "dunkirk",
-         "night"
-      ],
       "anime": [
-         "bond",
          "tester"
       ],
       "minecraft": [
-         "bond",
          "dunkirk",
          "tester",
          "goodtime"
-      ],
-      "magritte": [
-         "bond"
       ],
       "pixar": [
          "dunkirk",
@@ -333,10 +257,6 @@
       ],
       "ghibli": [
          "goodtime"
-      ],
-      "pencil": [
-         "night",
-         "django"
       ]
    },
    "cowboy_prompts": {
@@ -346,7 +266,6 @@
       "pop": [
          "spectre2",
          "superman",
-         "bond",
          "her",
          "tester",
          "goodtime",
@@ -359,7 +278,6 @@
       "magic": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "tester",
@@ -406,7 +324,6 @@
       "2d": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "goodtime",
          "night",
@@ -415,7 +332,6 @@
       "magritte": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "spectre",
@@ -427,7 +343,6 @@
       "pencil": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "spectre",
          "tester",
@@ -436,7 +351,6 @@
       ],
       "spiderverse": [
          "superman",
-         "bond",
          "her"
       ]
    }
