@@ -86,15 +86,6 @@
          "tester",
          "goodtime"
       ],
-      "minecraft": [
-         "brad",
-         "dunkirk",
-         "her",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "pixar": [
          "bond",
          "dunkirk",
@@ -224,14 +215,6 @@
          "her",
          "spectre",
          "tester",
-         "django"
-      ],
-      "marvel": [
-         "dunkirk",
-         "wolf",
-         "tester",
-         "goodtime",
-         "night",
          "django"
       ],
       "spiderverse": [
@@ -387,7 +370,6 @@
       ],
       "rickandmorty": [
          "spectre2",
-         "bond",
          "dunkirk",
          "wolf",
          "her",
@@ -449,9 +431,6 @@
          "her",
          "tester",
          "goodtime"
-      ],
-      "marvel": [
-         "spectre"
       ]
    },
    "princess_prompts": {
@@ -569,14 +548,6 @@
          "spectre",
          "tester",
          "night"
-      ],
-      "marvel": [
-         "spectre2",
-         "superman",
-         "bond",
-         "dunkirk",
-         "tester",
-         "goodtime"
       ],
       "rickandmorty": [
          "spectre2",

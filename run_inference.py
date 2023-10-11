@@ -396,7 +396,7 @@ def generate_all_images(user_id):
 
             # Upload Profile Info to mongo
             log_generation_info(
-                user_id, i, config, {"category": category, "base_prompt": chosen_prompt}
+                user_id, i, config, {"category": category, "base_prompt": chosen_prompt, "filter": filter_to_use}
             )
 
             # Upload image to s3
