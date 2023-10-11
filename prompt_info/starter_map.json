@@ -76,7 +76,6 @@
       "magic": [
          "superman",
          "dunkirk",
-         "her",
          "tester",
          "goodtime"
       ],
@@ -114,7 +113,6 @@
       "magic": [
          "superman",
          "dunkirk",
-         "her",
          "tester"
       ],
       "impressionist": [
@@ -170,7 +168,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "her",
          "tester",
          "goodtime",
          "django"
@@ -248,8 +245,7 @@
          "spectre2",
          "superman",
          "her",
-         "tester",
-         "goodtime"
+         "tester"
       ],
       "south_park": [
          "tester",
@@ -259,7 +255,6 @@
          "spectre2",
          "superman",
          "dunkirk",
-         "her",
          "tester",
          "goodtime"
       ],
