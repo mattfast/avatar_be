@@ -25,7 +25,6 @@
       "pencil": [
          "superman",
          "brad",
-         "dunkirk",
          "tester"
       ],
       "pixar": [
@@ -118,7 +117,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "her",
          "tester"
       ],
       "magritte": [
@@ -129,7 +127,6 @@
       ],
       "pencil": [
          "superman",
-         "dunkirk",
          "her",
          "tester"
       ],
@@ -169,7 +166,6 @@
       ],
       "impressionist": [
          "spectre2",
-         "her",
          "tester",
          "goodtime",
          "django"
@@ -255,8 +251,7 @@
       ],
       "impressionist": [
          "spectre2",
-         "bond",
-         "her"
+         "bond"
       ],
       "pixar": [
          "spectre2",
@@ -299,9 +294,7 @@
       "pencil": [
          "spectre2",
          "superman",
-         "dunkirk",
-         "tester",
-         "goodtime"
+         "tester"
       ],
       "spiderverse": [
          "her",
