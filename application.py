@@ -313,7 +313,11 @@ def generate_feed():
     # find users not voted on yet
     users_not_voted = mongo_read(
         "Users",
-        {"user_id": {"$nin": voted_on}, "images_generated": True, "active": { "$exists": False }},
+        {
+            "user_id": {"$nin": voted_on},
+            "images_generated": True,
+            "active": {"$exists": False},
+        },
         find_many=True,
     )
     users_list = list(users_not_voted)
@@ -406,7 +410,11 @@ def send_text_blast():
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
 
-    users = mongo_read("Users", {"images_generated": True, "active": { "$exists": False }}, find_many=True)
+    users = mongo_read(
+        "Users",
+        {"images_generated": True, "active": {"$exists": False}},
+        find_many=True,
+    )
 
     if users is None:
         return "users not found", 500
@@ -443,7 +451,11 @@ def send_feed_texts():
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
 
-    users = mongo_read("Users", {"images_generated": True, "active": { "$exists": False }}, find_many=True)
+    users = mongo_read(
+        "Users",
+        {"images_generated": True, "active": {"$exists": False}},
+        find_many=True,
+    )
 
     if users is None:
         return "users not found", 500
@@ -485,7 +497,11 @@ def send_update_texts():
     if lambda_token_header != lambda_token:
         return "lambda token invalid", 401
 
-    users = mongo_read("Users", {"images_generated": True, "active": { "$exists": False }}, find_many=True)
+    users = mongo_read(
+        "Users",
+        {"images_generated": True, "active": {"$exists": False}},
+        find_many=True,
+    )
 
     if users is None:
         return "users not found", 500
@@ -890,15 +906,14 @@ def run_inferences():
         "UserTrainingJobs",
         {
             "$and": [
-                { "upload_status": "success" },
+                {"upload_status": "success"},
                 {
                     "$or": [
-                        { "generation_status": {"$exists": False} },
-                        { "generation_status": {"$ne": "success"} },
+                        {"generation_status": {"$exists": False}},
+                        {"generation_status": {"$ne": "success"}},
                     ]
-                }
+                },
             ]
-
         },
     )
     if job is None:
