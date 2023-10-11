@@ -31,9 +31,6 @@
       ],
       "pixar": [
          "tester"
-      ],
-      "spiderverse": [
-         "tester"
       ]
    },
    "warrior_prompts": {
@@ -48,7 +45,6 @@
          "night"
       ],
       "impressionist": [
-         "spectre2",
          "dunkirk",
          "her",
          "tester",
@@ -276,10 +272,6 @@
          "spectre2",
          "superman",
          "dunkirk",
-         "tester"
-      ],
-      "rickandmorty": [
-         "spectre2",
          "tester"
       ],
       "anime": [
