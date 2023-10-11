@@ -428,7 +428,6 @@ def generate_all_images(user_id):
         logging.info(f"UPDATED USER INFO for {user_id}. NOW SENDING TEXT")
 
         # notify user
-        """
         text_id = str(uuid4())
         number = user.get("number", None)
         send_message(
@@ -443,7 +442,6 @@ def generate_all_images(user_id):
             text_id=text_id,
             log=True,
         )
-        """
 
         logging.info(f"SENDING MESSAGE to {user_id}")
 
