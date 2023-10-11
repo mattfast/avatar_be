@@ -8,10 +8,8 @@
          "superman",
          "brad",
          "her",
-         "spectre",
          "tester",
-         "goodtime",
-         "django"
+         "goodtime"
       ],
       "magic": [
          "superman",
@@ -47,7 +45,6 @@
       ],
       "impressionist": [
          "spectre2",
-         "bond",
          "dunkirk",
          "her",
          "spectre",
@@ -184,7 +181,6 @@
       "impressionist": [
          "spectre2",
          "her",
-         "spectre",
          "tester",
          "goodtime",
          "django"
