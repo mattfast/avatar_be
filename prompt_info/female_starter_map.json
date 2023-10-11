@@ -3,10 +3,6 @@
       "stick_figure": [
          "margot_snap"
       ],
-      "south_park": [
-         "jen",
-         "bluejas"
-      ],
       "magic": [
          "jen"
       ],
@@ -214,9 +210,6 @@
       ],
       "ghibli": [
          "tester"
-      ],
-      "2d": [
-         "hungergames"
       ]
    },
    "cowboy_prompts": {
