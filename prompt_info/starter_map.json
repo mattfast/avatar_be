@@ -29,12 +29,6 @@
          "goodtime",
          "django"
       ],
-      "2d": [
-         "spectre2",
-         "brad",
-         "tester",
-         "django"
-      ],
       "magic": [
          "superman",
          "brad",
@@ -54,10 +48,7 @@
          "goodtime"
       ],
       "pixar": [
-         "dunkirk",
-         "spectre",
-         "tester",
-         "night"
+         "tester"
       ]
    },
    "warrior_prompts": {
@@ -75,10 +66,7 @@
       "south_park": [
          "spectre2",
          "superman",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
+         "tester"
       ],
       "impressionist": [
          "spectre2",
@@ -87,8 +75,7 @@
          "her",
          "spectre",
          "tester",
-         "goodtime",
-         "django"
+         "goodtime"
       ],
       "pixar": [
          "spectre2",
@@ -98,9 +85,7 @@
          "her",
          "spectre",
          "tester",
-         "goodtime",
-         "night",
-         "django"
+         "goodtime"
       ],
       "anime": [
          "spectre2",
@@ -119,21 +104,13 @@
          "night",
          "django"
       ],
-      "2d": [
-         "spectre2",
-         "dunkirk",
-         "her",
-         "goodtime"
-      ],
       "magic": [
          "superman",
          "dunkirk",
          "her",
          "spectre",
          "tester",
-         "goodtime",
-         "night",
-         "django"
+         "goodtime"
       ],
       "ghibli": [
          "superman",
@@ -146,17 +123,14 @@
          "dunkirk",
          "spectre",
          "tester",
-         "goodtime",
-         "django"
+         "goodtime"
       ],
       "pencil": [
          "superman",
          "bond",
          "dunkirk",
          "her",
-         "spectre",
-         "tester",
-         "django"
+         "tester"
       ],
       "spiderverse": [
          "tester"
@@ -204,8 +178,6 @@
          "tester"
       ],
       "south_park": [
-         "dunkirk",
-         "her",
          "tester"
       ],
       "spiderverse": [
@@ -216,10 +188,6 @@
       "minecraft": [
          "bond",
          "dunkirk",
-         "her"
-      ],
-      "2d": [
-         "bond",
          "her"
       ],
       "ghibli": [
@@ -273,20 +241,8 @@
          "tester",
          "night"
       ],
-      "claymation": [
-         "spectre2",
-         "superman",
-         "dunkirk",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "rickandmorty": [
          "spectre2",
-         "dunkirk",
          "tester",
          "goodtime",
          "night"
@@ -310,17 +266,6 @@
          "spectre",
          "tester",
          "goodtime",
-         "night",
-         "django"
-      ],
-      "2d": [
-         "superman",
-         "her",
-         "spectre",
-         "goodtime"
-      ],
-      "south_park": [
-         "tester",
          "night",
          "django"
       ],
@@ -386,10 +331,6 @@
          "night",
          "django"
       ],
-      "claymation": [
-         "her",
-         "goodtime"
-      ],
       "ghibli": [
          "goodtime"
       ],
@@ -412,12 +353,8 @@
          "night"
       ],
       "south_park": [
-         "spectre2",
-         "her",
-         "spectre",
          "tester",
-         "goodtime",
-         "night"
+         "goodtime"
       ],
       "magic": [
          "spectre2",
