@@ -6,10 +6,6 @@
       "magic": [
          "jen"
       ],
-      "spiderverse": [
-         "jen",
-         "tester"
-      ],
       "impressionist": [
          "jen",
          "tester"
@@ -18,9 +14,6 @@
          "jen",
          "tester",
          "bluejas"
-      ],
-      "magritte": [
-         "jen"
       ],
       "pop": [
          "tester",
@@ -47,12 +40,6 @@
          "jen",
          "tester"
       ],
-      "spiderverse": [
-         "jen",
-         "tester",
-         "bluejas",
-         "hungergames"
-      ],
       "impressionist": [
          "jen",
          "tester",
@@ -72,14 +59,12 @@
          "tester",
          "hungergames"
       ],
-      "magritte": [
-         "jen",
-         "bluejas",
-         "hungergames"
-      ],
       "pencil": [
          "jen",
          "tester"
+      ],
+      "spiderverse": [
+         "jen"
       ]
    },
    "magic_prompts": {
@@ -91,11 +76,6 @@
       ],
       "magic": [
          "jen"
-      ],
-      "spiderverse": [
-         "jen",
-         "bluejas",
-         "margot_snap"
       ],
       "impressionist": [
          "jen",
@@ -116,10 +96,8 @@
          "tester",
          "hungergames"
       ],
-      "magritte": [
-         "jen",
-         "bluejas",
-         "hungergames"
+      "spiderverse": [
+         "jen"
       ]
    },
    "king_prompts": {
@@ -130,13 +108,6 @@
          "jen",
          "tester",
          "bluejas"
-      ],
-      "spiderverse": [
-         "jen",
-         "tester",
-         "bluejas",
-         "hungergames",
-         "margot_snap"
       ],
       "impressionist": [
          "jen",
@@ -154,10 +125,6 @@
       ],
       "2d": [
          "jen"
-      ],
-      "magritte": [
-         "jen",
-         "hungergames"
       ],
       "pencil": [
          "jen",
@@ -177,7 +144,6 @@
       ],
       "pop": [
          "jen",
-         "tester",
          "bluejas",
          "hungergames"
       ],
@@ -185,28 +151,17 @@
          "jen",
          "hungergames"
       ],
-      "spiderverse": [
-         "jen"
-      ],
       "impressionist": [
          "jen",
-         "tester",
          "hungergames"
       ],
       "pixar": [
-         "jen",
-         "tester",
-         "bluejas",
-         "hungergames"
-      ],
-      "magritte": [
          "jen",
          "bluejas",
          "hungergames"
       ],
       "pencil": [
-         "jen",
-         "tester"
+         "jen"
       ],
       "ghibli": [
          "tester"
@@ -218,11 +173,6 @@
       ],
       "magic": [
          "jen"
-      ],
-      "spiderverse": [
-         "jen",
-         "tester",
-         "bluejas"
       ],
       "impressionist": [
          "jen",
@@ -242,10 +192,6 @@
          "tester",
          "bluejas",
          "hungergames"
-      ],
-      "magritte": [
-         "jen",
-         "bluejas"
       ],
       "pencil": [
          "jen",

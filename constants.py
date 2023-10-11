@@ -72,7 +72,7 @@ styles = {
     "stick_figure": {"full_prompt": "a stick figure drawing", "no_prompt": True},
 }
 
-random_animal_styles = ["mooing cow", "stupid looking llama"]
+random_animal_styles = ["mooing cow"]
 extra_boy_styles = random_animal_styles + [
     "ukj person as a princess from a disney movie",
 ]

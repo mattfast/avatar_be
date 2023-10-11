@@ -1,6 +1,5 @@
 ukj person as a female Warlock with grand robes, set against a floating castle || {"steps": 60}
 ukj person as a sorcereress in robes, fire and stars in the background. || {"steps": 60}
 ukj person as a female mage, dreamlike swirls in the background
-ukj person as a female Shaman, performing a ritual
 ukj person, girl, as a time-traveler, set against a wall of clocks
 ukj person as a female Howarts potions student brewing a potion
