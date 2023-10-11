@@ -435,7 +435,7 @@ def generate_all_images(user_id):
             "+1" + number,
         )
         send_message(
-            f"https://dopple.club/profile/${user_id}?t={text_id}",
+            f"https://dopple.club/profile/{user_id}?t={text_id}",
             "+1" + number,
             message_type=TextType.ALERT.value,
             user_id=user_id,
