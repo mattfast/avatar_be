@@ -443,7 +443,7 @@ def generate_all_images(user_id):
             log=True,
         )
 
-        logging.info(f"SENDING MESSAGE to {user_id}")
+        logging.info(f"FINISHED SENDING MESSAGE to {user_id}")
 
     except Exception as e:
         logging.info("EXCEPTION GENERATED")
