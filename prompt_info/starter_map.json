@@ -7,11 +7,8 @@
          "spectre2",
          "superman",
          "brad",
-         "bond",
-         "dunkirk",
          "tester",
          "goodtime",
-         "django"
       ],
       "spiderverse": [
          "spectre2",
@@ -26,7 +23,6 @@
          "spectre2",
          "superman",
          "brad",
-         "bond",
          "her",
          "spectre",
          "tester",
@@ -42,7 +38,6 @@
       "magic": [
          "superman",
          "brad",
-         "bond",
          "dunkirk",
          "her",
          "spectre",
@@ -59,7 +54,6 @@
          "goodtime"
       ],
       "pixar": [
-         "bond",
          "dunkirk",
          "spectre",
          "tester",
@@ -81,10 +75,6 @@
       "south_park": [
          "spectre2",
          "superman",
-         "bond",
-         "dunkirk",
-         "her",
-         "spectre",
          "tester",
          "goodtime",
          "night",
@@ -153,7 +143,6 @@
       ],
       "magritte": [
          "superman",
-         "bond",
          "dunkirk",
          "spectre",
          "tester",
@@ -198,15 +187,12 @@
          "tester"
       ],
       "rickandmorty": [
-         "superman",
-         "bond",
          "dunkirk",
          "her",
          "tester"
       ],
       "magritte": [
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "tester"
@@ -218,7 +204,6 @@
          "tester"
       ],
       "south_park": [
-         "bond",
          "dunkirk",
          "her",
          "tester"
@@ -291,7 +276,6 @@
       "claymation": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "spectre",
@@ -322,7 +306,6 @@
       "magritte": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "spectre",
          "tester",
@@ -337,17 +320,12 @@
          "goodtime"
       ],
       "south_park": [
-         "bond",
-         "dunkirk",
-         "spectre",
          "tester",
-         "goodtime",
          "night",
          "django"
       ],
       "pencil": [
          "bond",
-         "dunkirk",
          "tester",
          "goodtime"
       ],
@@ -398,9 +376,6 @@
          "tester",
          "goodtime"
       ],
-      "2d": [
-         "bond"
-      ],
       "magritte": [
          "bond"
       ],
@@ -438,7 +413,6 @@
       ],
       "south_park": [
          "spectre2",
-         "bond",
          "her",
          "spectre",
          "tester",
@@ -471,10 +445,6 @@
       ],
       "rickandmorty": [
          "spectre2",
-         "bond",
-         "her",
-         "spectre",
-         "goodtime",
          "night",
          "django"
       ],
@@ -488,7 +458,6 @@
       "minecraft": [
          "spectre2",
          "superman",
-         "bond",
          "dunkirk",
          "her",
          "spectre",
