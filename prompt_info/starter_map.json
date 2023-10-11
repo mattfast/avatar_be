@@ -9,9 +9,7 @@
       ],
       "impressionist": [
          "spectre2",
-         "superman",
          "brad",
-         "her",
          "tester",
          "goodtime"
       ],
@@ -132,7 +130,6 @@
       ],
       "rickandmorty": [
          "dunkirk",
-         "her",
          "tester"
       ],
       "magritte": [
@@ -194,8 +191,7 @@
          "superman",
          "dunkirk",
          "her",
-         "tester",
-         "night"
+         "tester"
       ],
       "anime": [
          "spectre2",
@@ -229,17 +225,6 @@
          "spectre2",
          "tester"
       ],
-      "magic": [
-         "spectre2",
-         "dunkirk",
-         "her",
-         "tester",
-         "goodtime",
-         "django"
-      ],
-      "spiderverse": [
-         "django"
-      ],
       "anime": [
          "tester"
       ],
@@ -268,8 +253,7 @@
          "superman",
          "her",
          "tester",
-         "goodtime",
-         "night"
+         "goodtime"
       ],
       "south_park": [
          "tester",
@@ -281,8 +265,7 @@
          "dunkirk",
          "her",
          "tester",
-         "goodtime",
-         "django"
+         "goodtime"
       ],
       "impressionist": [
          "spectre2",
@@ -293,13 +276,11 @@
          "spectre2",
          "superman",
          "dunkirk",
-         "tester",
-         "night"
+         "tester"
       ],
       "rickandmorty": [
          "spectre2",
-         "night",
-         "django"
+         "tester"
       ],
       "anime": [
          "spectre2",
@@ -321,10 +302,7 @@
       "2d": [
          "spectre2",
          "superman",
-         "dunkirk",
-         "goodtime",
-         "night",
-         "django"
+         "dunkirk"
       ],
       "magritte": [
          "spectre2",
@@ -341,12 +319,11 @@
          "superman",
          "dunkirk",
          "tester",
-         "goodtime",
-         "django"
+         "goodtime"
       ],
       "spiderverse": [
-         "superman",
-         "her"
+         "her",
+         "tester"
       ]
    }
 }
