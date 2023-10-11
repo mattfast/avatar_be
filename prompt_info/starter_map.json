@@ -13,19 +13,6 @@
          "goodtime",
          "django"
       ],
-      "south_park": [
-         "spectre2",
-         "brad",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
       "spiderverse": [
          "spectre2",
          "brad",
@@ -48,14 +35,8 @@
       ],
       "2d": [
          "spectre2",
-         "superman",
          "brad",
-         "bond",
-         "wolf",
-         "her",
          "tester",
-         "goodtime",
-         "night",
          "django"
       ],
       "magic": [
@@ -68,15 +49,6 @@
          "tester",
          "goodtime",
          "django"
-      ],
-      "claymation": [
-         "superman",
-         "brad",
-         "bond",
-         "wolf",
-         "her",
-         "spectre",
-         "tester"
       ],
       "pencil": [
          "superman",
@@ -101,7 +73,6 @@
       "pop": [
          "spectre2",
          "bond",
-         "wolf",
          "her",
          "tester",
          "goodtime",
@@ -112,7 +83,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -124,7 +94,6 @@
          "spectre2",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -136,19 +105,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
-         "tester",
-         "goodtime",
-         "night",
-         "django"
-      ],
-      "claymation": [
-         "spectre2",
-         "bond",
-         "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -166,7 +122,6 @@
       "minecraft": [
          "spectre2",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -178,13 +133,11 @@
          "spectre2",
          "dunkirk",
          "her",
-         "spectre",
          "goodtime"
       ],
       "magic": [
          "superman",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -211,7 +164,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -228,7 +180,6 @@
       "pop": [
          "superman",
          "bond",
-         "wolf",
          "her",
          "tester"
       ],
@@ -236,7 +187,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "tester"
       ],
@@ -247,19 +197,10 @@
          "her",
          "tester"
       ],
-      "claymation": [
-         "superman",
-         "bond",
-         "dunkirk",
-         "wolf",
-         "her",
-         "tester"
-      ],
       "rickandmorty": [
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "tester"
       ],
@@ -267,27 +208,23 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "tester"
       ],
       "pencil": [
          "superman",
          "dunkirk",
-         "wolf",
          "her",
          "tester"
       ],
       "south_park": [
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "tester"
       ],
       "spiderverse": [
          "bond",
-         "wolf",
          "her",
          "tester"
       ],
@@ -313,7 +250,6 @@
          "spectre2",
          "superman",
          "bond",
-         "wolf",
          "tester",
          "goodtime",
          "django"
@@ -323,7 +259,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -333,7 +268,6 @@
       "spiderverse": [
          "spectre2",
          "bond",
-         "wolf",
          "her",
          "night"
       ],
@@ -349,7 +283,6 @@
          "spectre2",
          "superman",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -360,7 +293,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -371,18 +303,12 @@
       "rickandmorty": [
          "spectre2",
          "dunkirk",
-         "wolf",
-         "her",
-         "spectre",
          "tester",
          "goodtime",
          "night",
-         "django"
       ],
       "anime": [
          "spectre2",
-         "superman",
-         "her",
          "tester"
       ],
       "minecraft": [
@@ -398,7 +324,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "spectre",
          "tester",
          "goodtime",
@@ -414,7 +339,6 @@
       "south_park": [
          "bond",
          "dunkirk",
-         "wolf",
          "spectre",
          "tester",
          "goodtime",
@@ -507,7 +431,6 @@
          "spectre2",
          "superman",
          "bond",
-         "wolf",
          "her",
          "tester",
          "goodtime",
@@ -516,7 +439,6 @@
       "south_park": [
          "spectre2",
          "bond",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -528,7 +450,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "tester",
          "goodtime",
@@ -544,7 +465,6 @@
          "spectre2",
          "superman",
          "dunkirk",
-         "wolf",
          "spectre",
          "tester",
          "night"
@@ -552,7 +472,6 @@
       "rickandmorty": [
          "spectre2",
          "bond",
-         "wolf",
          "her",
          "spectre",
          "goodtime",
@@ -571,7 +490,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -593,7 +511,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "her",
          "spectre",
          "tester",
@@ -606,7 +523,6 @@
          "superman",
          "bond",
          "dunkirk",
-         "wolf",
          "spectre",
          "tester",
          "goodtime",
@@ -615,7 +531,6 @@
       "spiderverse": [
          "superman",
          "bond",
-         "wolf",
          "her"
       ]
    }
