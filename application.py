@@ -829,7 +829,7 @@ def set_primary_image():
     if primary_image is None:
         return "no primary_image", 400
 
-    if primary_image < 10 and primary_image >= 0:
+    if primary_image < 15 and primary_image >= 0:
         mongo_upsert(
             "Users",
             {"user_id": user.get("user_id", None)},
@@ -947,7 +947,6 @@ def upload_model(user_id):
     package_thread = threading.Thread(target=package_model, args=[user_id])
     package_thread.start()
     return "upload started", 201
-
 
 # Run user inference
 @app.route("/run-inference/<user_id>", methods=["POST"])
