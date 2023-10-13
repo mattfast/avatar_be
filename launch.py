@@ -19,9 +19,9 @@ def _exec_subprocess(cmd: list[str]):
     #     for line in iter(pipe.readline, b""):
     #         line_str = line.decode()
     #         print(f"{line_str}", end="")
-    #
-    # if exitcode := process.wait() != 0:
-    #     raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
+
+    if exitcode := process.wait() != 0:
+        raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
 
 
 def launch_command(urls: list[str], user_id):
