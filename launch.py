@@ -45,7 +45,7 @@ def launch_command(urls: list[str], user_id):
 
 
 if __name__ == "__main__":
-    launch_command(urls, "test_user")
+    launch_command(urls, "AKASH_FAKE_USER")
 
 # Test this on EC2 by installing new dependencies
 # test this end to end (with s3 uploading)
