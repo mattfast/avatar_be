@@ -1,10 +1,13 @@
 import subprocess
+import argparse
 
-urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=x6EXC1avNPZ8wf%2B0ezLEiOjNY%2FE%3D&Expires=1697221184',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-1-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=UZ67IDEcr13sIf72RCQzwgQv6og%3D&Expires=1697221184',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-2-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=PitpR%2F6a%2Bfxe3kxIKlfXz7flfcQ%3D&Expires=1697221184',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-3-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=buApOHKTLFLBLlp%2FKdnrWILodrg%3D&Expires=1697221184',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-4-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=D8ZWhnjSPwgjgaEY4fe8Z%2FqvMBU%3D&Expires=1697221184']
+parser = argparse.ArgumentParser()
+
+urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=BMHP3rWQSpIlhYOhVh2omsL6wKg%3D&Expires=1697235208',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-1-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=a6dvfIYpeoVjiXdd2DIj72VzfeU%3D&Expires=1697235208',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-2-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=t49ouPAHaZJSNNY9U2QEfZYBDCI%3D&Expires=1697235208',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-3-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=I0QKffBYjVq6XwqtjfKaPizWeJ4%3D&Expires=1697235208',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-4-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=woHimd5Px5rQkepOhUTQ8AMW03A%3D&Expires=1697235208']
 prefix = "weird_prefix"
 
 
@@ -15,10 +18,10 @@ def _exec_subprocess(cmd: list[str]):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
-    # with process.stdout as pipe:
-    #     for line in iter(pipe.readline, b""):
-    #         line_str = line.decode()
-    #         print(f"{line_str}", end="")
+    with process.stdout as pipe:
+        for line in iter(pipe.readline, b""):
+            line_str = line.decode()
+            print(f"{line_str}", end="")
 
     if exitcode := process.wait() != 0:
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
@@ -45,7 +48,7 @@ def launch_command(urls: list[str], user_id):
 
 
 if __name__ == "__main__":
-    launch_command(urls, "AKASH_FAKE_USER")
+    launch_command(urls, "AKASH_USER")
 
 # Test this on EC2 by installing new dependencies
 # test this end to end (with s3 uploading)

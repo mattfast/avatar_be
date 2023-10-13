@@ -154,7 +154,6 @@ def train(instance_example_urls, user_id):
         print(result)
         return result
 
-    assert 0 == 1
     # set up runner-local image and shared model weight directories
     img_path = load_images(instance_example_urls)
     output_dir = MODEL_DIR/f"{user_id}_outputs"
@@ -264,7 +263,6 @@ import sys
 sys.path.append("/home/ubuntu/avatar_be/")
 
 
-
 @stub.local_entrypoint()
 def run(urls: str, user: str):
     parsed_urls = [url.strip() for url in urls.split("\n")]
@@ -274,6 +272,7 @@ def run(urls: str, user: str):
         try:
             mongo_upsert("UserTrainingJobs", {"user_id": user}, {"modal_training_status": "started"})
             train.remote(parsed_urls, user)
+            upload_to_s3.remote([user])
         except:
             print("FAILED")
             mongo_upsert("UserTrainingJobs", {"user_id": user}, {"modal_training_status": "failure"})
