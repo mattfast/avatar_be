@@ -5,6 +5,7 @@ import shutil
 import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
+from constants import PATH_PREFIX
 
 import boto3
 import requests
@@ -23,7 +24,7 @@ headers = {
     "authorization": f"Bearer {dreamlook_api_key}",
 }
 
-model_folder_name = "/home/ubuntu/avatar_be/packaged_models"
+model_folder_name = f"{PATH_PREFIX}packaged_models"
 
 
 sagemaker_session = sagemaker.Session(
@@ -99,7 +100,7 @@ def package_model(user_id):
                 file.write(chunk)
 
         logging.info("Writing tar files")
-        save_file_name = f"/home/ubuntu/avatar_be/packaged_models/{user_id}.tar.gz"
+        save_file_name = f"{PATH_PREFIX}packaged_models/{user_id}.tar.gz"
         with tarfile.open(save_file_name, "w:gz") as tar:
             tar.add(base_path, arcname=os.path.basename(base_path))
 

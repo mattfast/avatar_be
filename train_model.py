@@ -1,5 +1,7 @@
 import json
+import subprocess
 import threading
+from constants import PATH_PREFIX
 import time
 
 import boto3
@@ -131,3 +133,44 @@ def check_job_until_finished(job_url, user_id):
     mongo_upsert(
         "UserTrainingJobs", {"user_id": user_id}, {"training_status": "success"}
     )
+
+
+def _exec_subprocess(cmd: list[str]):
+    """Executes subprocess and prints log to terminal while subprocess is running."""
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    with process.stdout as pipe:
+        for line in iter(pipe.readline, b""):
+            line_str = line.decode()
+            print(f"{line_str}", end="")
+
+    if exitcode := process.wait() != 0:
+        raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
+
+
+def launch_modal_training_command(user_id, upload_only: bool = False):
+    urls = []
+    if not upload_only:
+        urls = create_urls_for_training(user_id)
+    combined_urls = "\n".join(urls)
+
+    prefix = PATH_PREFIX
+    upload_only_str = "true" if upload_only else "false"
+
+    cmd = [
+        "modal",
+        "run",
+        f"{prefix}modal_dreambooth.py",
+        f"--user={user_id}",
+        f"--urls={combined_urls}",
+        f"--upload-only={upload_only_str}",
+    ]
+
+    try:
+        _exec_subprocess(cmd)
+    except:
+        # Call failure
+        print("ERROR")

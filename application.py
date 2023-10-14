@@ -12,12 +12,19 @@ from pymongo import DESCENDING
 from twilio.twiml.messaging_response import MessagingResponse
 
 from auth import login
-from dbs.mongo import mongo_push, mongo_read, mongo_read_sort, mongo_upsert, mongo_write
+from dbs.mongo import (
+    mongo_count,
+    mongo_push,
+    mongo_read,
+    mongo_read_sort,
+    mongo_upsert,
+    mongo_write,
+)
 from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
 from messaging import TextType, send_message
 from package_model import package_model
 from run_inference import generate_all_images
-from scripts.main import run_training_job_script
+from scripts.main import run_modal_training_script, run_training_job_script
 from train_model import check_job_status, post_request
 from users import get_top_users, get_user
 
@@ -846,6 +853,24 @@ def train_user_models():
     return "training script started", 201
 
 
+@app.route("/train-modal-models", methods=["POST"])
+def train_modal_models():
+    MAX_CONCURRENT = 10
+    num_dreambooth_training = mongo_count(
+        "UserTrainingJobs", {"modal_training_status": "started"}
+    )
+
+    if num_dreambooth_training >= MAX_CONCURRENT:
+        return "too many train jobs", 503
+
+    max_users_to_train = MAX_CONCURRENT - num_dreambooth_training
+    training_thread = threading.Thread(
+        target=run_modal_training_script, args=[max_users_to_train]
+    )
+    training_thread.start()
+    return "training script started", 201
+
+
 # Upload User Model to s3
 @app.route("/upload-models", methods=["POST"])
 def upload_models():
@@ -947,6 +972,7 @@ def upload_model(user_id):
     package_thread = threading.Thread(target=package_model, args=[user_id])
     package_thread.start()
     return "upload started", 201
+
 
 # Run user inference
 @app.route("/run-inference/<user_id>", methods=["POST"])

@@ -1,14 +1,14 @@
-import subprocess
 import argparse
+import subprocess
+from constants import PATH_PREFIX
 
 parser = argparse.ArgumentParser()
 
-urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=RD8idcxOjJPsMSwZqLBBuixOEHU%3D&Expires=1697274279',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-1-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=ktS6qGyOXcVe%2Bhf2w6YqvanVkyI%3D&Expires=1697274279',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-2-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=WYag82lJJSLp3bXAT3L738gDn7w%3D&Expires=1697274280',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-3-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=h4Df8Pco3nHl49LmuQpxmq%2F1Uro%3D&Expires=1697274280',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-4-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=OQnb63%2Fk6c%2BSFXaArxxJJoNTGPE%3D&Expires=1697274280']
-prefix = "weird_prefix"
+urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=XPAr%2F1RrK%2FnXewt11Zg9ivUXVXM%3D&Expires=1697309818',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-1-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=xwAAchP%2FuKuQao0Uobgpd9QtzGU%3D&Expires=1697309818',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-2-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=YbxO71KqwoMcbuYkT%2F7D%2F3Fm7OU%3D&Expires=1697309818',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-3-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=DYKAo1j5lFAE2qKva3A25E3V5Is%3D&Expires=1697309818',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-4-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=uVSwP0XSHiCMWm7ULBC1c97v0k4%3D&Expires=1697309818']
 
 
 def _exec_subprocess(cmd: list[str]):
@@ -27,17 +27,19 @@ def _exec_subprocess(cmd: list[str]):
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
 
 
-def launch_command(urls: list[str], user_id):
+def launch_command(urls: list[str], user_id, upload_only: bool = False):
     combined_urls = "\n".join(urls)
+    upload_only_str = "true" if upload_only else "false"
 
-    prefix = "/home/ubuntu/avatar_be/"
+    prefix = PATH_PREFIX
 
     cmd = [
         "modal",
         "run",
         f"{prefix}modal_dreambooth.py",
         f"--user={user_id}",
-        f"--urls={combined_urls}"
+        f"--urls={combined_urls}",
+        f"--upload-only={upload_only_str}",
     ]
 
     try:

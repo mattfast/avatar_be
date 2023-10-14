@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+from constants import PATH_PREFIX
 import random
 import time
 from io import BytesIO
@@ -270,12 +271,12 @@ def generate_all_images(user_id):
 
     gender = user.get("gender", "girl").strip().lower()
 
-    curr_directory = "/home/ubuntu/avatar_be"
+    curr_directory = PATH_PREFIX
 
     prefix = "female_"
     style_map = girl_styles
     extra_styles = extra_girl_styles
-    starter_file = Path(f"{curr_directory}/prompt_info/female_starter_map.json")
+    starter_file = Path(f"{curr_directory}prompt_info/female_starter_map.json")
     if gender == "boy":
         prefix = ""
         style_map = boy_styles

@@ -1,16 +1,9 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from constants import PATH_PREFIX
 
-from modal import (
-    Image,
-    Mount,
-    Secret,
-    Stub,
-    Volume,
-    asgi_app,
-    method,
-)
+from modal import Image, Mount, Secret, Stub, Volume, asgi_app, method
 
 assets_path = Path(__file__).parent / "assets"
 stub = Stub(name="dream-booth-test")
@@ -32,7 +25,7 @@ image = (
         "pymongo",
         "scipy",
         "safetensors",
-        "tensorboard"
+        "tensorboard",
     )
     .pip_install("xformers==0.0.22", pre=True)
     .pip_install("bitsandbytes", pre=True)
@@ -48,12 +41,9 @@ image = (
     )
 )
 
-s3_upload_image = (
-    Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "boto3",
-        "sagemaker",
-    )
+s3_upload_image = Image.debian_slim(python_version="3.11").pip_install(
+    "boto3",
+    "sagemaker",
 )
 
 volume = Volume.persisted("finetune-volume")
@@ -79,7 +69,7 @@ def load_images(image_urls):
 
 
 @dataclass
-class TrainConfig():
+class TrainConfig:
     """Configuration for the finetuning step."""
 
     # locator for plaintext file with urls for images of target instance
@@ -106,58 +96,23 @@ class TrainConfig():
     image=image,
     gpu="A100",  # finetuning is VRAM hungry, so this should be an A100
     volumes={
-        str(
-            MODEL_DIR
-        ): volume,  # fine-tuned model will be stored at `MODEL_DIR`
+        str(MODEL_DIR): volume,  # fine-tuned model will be stored at `MODEL_DIR`
     },
     timeout=1800,  # 30 minutes
-    secret=Secret.from_name("mongo")
+    secret=Secret.from_name("mongo"),
 )
-def train(instance_example_urls, user_id):
+def train(instance_example_urls: list[str], user_id: str):
     import subprocess
-    import pymongo
-    import certifi
-    import sys
+    from pathlib import Path
     from accelerate.utils import write_basic_config
-
-    mongo_key = os.environ["MONGO_KEY"]
-    mongo_connection_string = f"mongodb+srv://matthew:{mongo_key}@cluster0.4exrr9f.mongodb.net/?retryWrites=true&w=majority"
-    try:
-        client = pymongo.MongoClient(mongo_connection_string, tlsCAFile=certifi.where())
-    except pymongo.errors.ConfigurationError:
-        print(
-            "An Invalid URI host error was received. Is your Atlas host name correct in your connection string?"
-        )
-        sys.exit(1)
-    else:
-        print("MONGO CLIENT")
-        print(client)
-    mongo_db = client["DoppleProd"]
-
-    def mongo_upsert(collection, query, update, update_many: bool = False):
-        try:
-            if not update_many:
-                result = mongo_db[collection].update_one(
-                    query, {"$set": update}, upsert=True
-                )
-            else:
-                result = mongo_db[collection].update_many(
-                    query, {"$set": update}, upsert=True
-                )
-        except pymongo.errors.OperationFailure:
-            print("MONGO UPDATE ERROR")
-            print(f"Collection: {collection}")
-            print(f"Query Param: {query}")
-            print(f"Update Param: {update}")
-            result = None
-
-        print(result)
-        return result
 
     # set up runner-local image and shared model weight directories
     img_path = load_images(instance_example_urls)
-    output_dir = MODEL_DIR/f"{user_id}_outputs"
-    os.makedirs(output_dir, exist_ok=True)
+
+    base_output_dir = MODEL_DIR / user_id
+    output_dir = base_output_dir / "1"/ "outputs"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"OUTPUT DIR IS {str(output_dir)}")
 
@@ -212,11 +167,10 @@ def train(instance_example_urls, user_id):
             f"--lr_scheduler={config.lr_scheduler}",
             f"--lr_warmup_steps={config.lr_warmup_steps}",
             f"--num_class_images={config.num_class_images}",
-            f"--max_train_steps={config.max_train_steps}"
+            f"--max_train_steps={config.max_train_steps}",
         ]
     )
 
-    mongo_upsert("UserTrainingJobs", {"user_id": user_id}, {"modal_training_status": "success"})
     # The trained model artefacts have been output to the volume mounted at `MODEL_DIR`.
     # To persist these artefacts for use in future inference function calls, we 'commit' the changes
     # to the volume.
@@ -226,31 +180,57 @@ def train(instance_example_urls, user_id):
 @stub.function(
     image=s3_upload_image,
     volumes={
-    str(
-        MODEL_DIR
-        ): volume,  # fine-tuned model will be stored at `MODEL_DIR`
+        str(MODEL_DIR): volume,  # fine-tuned model will be stored at `MODEL_DIR`
     },
     timeout=1800,  # 30 minutes
-    secret=Secret.from_name("my-aws-secret")
+    secret=Secret.from_name("my-aws-secret"),
 )
-def upload_to_s3(ids_to_parse: list[str]):
-    import boto3
+def upload_to_s3(ids_to_parse: list[str], config_file_str: str, model_file_str: str):
     import os
     import shutil
+    import sagemaker
     import tarfile
 
-    s3 = boto3.resource('s3', region_name="us-east-1")
+    import boto3
+
+    sagemaker_session = sagemaker.Session(
+        boto_session=boto3.Session(
+            region_name="us-east-2",
+        )
+    )
+    bucket = sagemaker_session.default_bucket()
+    prefix = "stable-diffusion-mme"
 
     # Create zip and upload to s3
     for id in ids_to_parse:
         print(f"Fetching new model for {id}")
-        base_path = MODEL_DIR / f"{id}_outputs/"
+        base_path = MODEL_DIR / id
+
+        model_version_path = base_path / "1"
+        print(f"Creating Model Version Path {str(model_version_path)}")
+        model_version_path.mkdir(parents=True, exist_ok=True)
+
+        print("Writing config.pbtxt file")
+        # Write config.pbtxt
+        to_write = open(base_path / "config.pbtxt", "w+")
+        to_write.write(f'name: "{id}"\n')
+        to_write.write(config_file_str)
+        to_write.close()
+
+        print("Writing model.py file")
+        # Write Model.PY
+        py_file_write = open(model_version_path / "model.py", "w+")
+        py_file_write.write(model_file_str)
+        py_file_write.close()
+
         save_file_name = MODEL_DIR / f"{id}.tar.gz"
         with tarfile.open(save_file_name, "w:gz") as tar:
             tar.add(base_path, arcname=os.path.basename(base_path))
 
-        print("Uploading model")
-        s3.meta.client.upload_file(save_file_name, 'uploaded-models', f"{id}.tar.gz")
+        print("Uploading model to s3")
+        sagemaker_session.upload_data(
+            path=save_file_name, bucket=bucket, key_prefix=prefix
+        )
         print("Removing Directories and files")
         shutil.rmtree(base_path, ignore_errors=True)
         os.remove(save_file_name)
@@ -260,21 +240,67 @@ def upload_to_s3(ids_to_parse: list[str]):
 
 
 import sys
-sys.path.append("/home/ubuntu/avatar_be/")
+
+sys.path.append(PATH_PREFIX)
 
 
 @stub.local_entrypoint()
-def run(urls: str, user: str):
+def run(urls: str, user: str, upload_only: str = "false"):
     parsed_urls = [url.strip() for url in urls.split("\n")]
+
     try:
         from dbs.mongo import mongo_upsert
 
+        if upload_only == "false":
+            try:
+                mongo_upsert(
+                    "UserTrainingJobs",
+                    {"user_id": user},
+                    {"modal_training_status": "started"},
+                )
+                train.remote(parsed_urls, user)
+                # Insert upload start to prevent race condition
+                mongo_upsert(
+                    "UserTrainingJobs",
+                    {"user_id": user},
+                    {
+                        "modal_training_status": "success",
+                        "modal_s3_upload_status": "started",
+                    },
+                )
+            except:
+                print("TRAINING FAILED")
+                mongo_upsert(
+                    "UserTrainingJobs",
+                    {"user_id": user},
+                    {"modal_training_status": "failure"},
+                )
+                return
+
         try:
-            mongo_upsert("UserTrainingJobs", {"user_id": user}, {"modal_training_status": "started"})
-            train.remote(parsed_urls, user)
-            upload_to_s3.remote([user])
+            # Load String Information for File Writing
+            artifacts_folder = Path(PATH_PREFIX)/"packaged_models"/"artifacts"
+            model_file_str = open(artifacts_folder / "model_dreambooth.py", 'r').read()
+            config_file_str = open(artifacts_folder / "config.pbtxt", 'r').read()
+
+            mongo_upsert(
+                "UserTrainingJobs",
+                {"user_id": user},
+                {"modal_s3_upload_status": "started"},
+            )
+            upload_to_s3.remote([user], config_file_str, model_file_str)
+            mongo_upsert(
+                "UserTrainingJobs",
+                {"user_id": user},
+                {"modal_s3_upload_status": "success"},
+            )
         except:
-            print("FAILED")
-            mongo_upsert("UserTrainingJobs", {"user_id": user}, {"modal_training_status": "failure"})
+            print("UPLOAD FAILED")
+            mongo_upsert(
+                "UserTrainingJobs",
+                {"user_id": user},
+                {"modal_upload_status": "failure"},
+            )
+
     except Exception as e:
         print(f"Exception raised: {e}")

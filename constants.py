@@ -72,6 +72,8 @@ styles = {
     "stick_figure": {"full_prompt": "a stick figure drawing", "no_prompt": True},
 }
 
+PATH_PREFIX =  "/home/ubuntu/avatar_be/"
+
 random_animal_styles = ["mooing cow"]
 extra_boy_styles = random_animal_styles + [
     "ukj person as a princess from a disney movie",
