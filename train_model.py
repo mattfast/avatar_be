@@ -176,6 +176,7 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
 
     try:
         _exec_subprocess(cmd)
-    except:
+    except Exception as e:
         # Call failure
         logging.info("ERROR")
+        logging.info(e)
