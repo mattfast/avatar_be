@@ -140,7 +140,7 @@ def check_job_until_finished(job_url, user_id):
 
 def _exec_subprocess(cmd: str):
     """Executes subprocess and prints log to terminal while subprocess is running."""
-    logging.info(subprocess.run(["modal --help"], shell=True))
+    logging.info(subprocess.run("modal --help", shell=True))
     # process = subprocess.Popen(
     #     [cmd],
     #     stdout=subprocess.PIPE,
@@ -155,7 +155,7 @@ def _exec_subprocess(cmd: str):
     #         logging.info(f"{line_str}")
     #
     # if exitcode := process.wait() != 0:
-    #     raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
+    #     raise subprocess.CalledProcessError(exitcode,  cmd)
 
 
 def launch_modal_training_command(user_id, upload_only: bool = False):
