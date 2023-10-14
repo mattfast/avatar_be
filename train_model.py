@@ -147,10 +147,10 @@ def _exec_subprocess(cmd: list[str]):
     )
 
     # # TODO: Remove this. Will clutter Output
-    # with process.stdout as pipe:
-    #     for line in iter(pipe.readline, b""):
-    #         line_str = line.decode()
-    #         logging.info(f"{line_str}", end="")
+    with process.stdout as pipe:
+        for line in iter(pipe.readline, b""):
+            line_str = line.decode()
+            logging.info(f"{line_str}", end="")
 
     if exitcode := process.wait() != 0:
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
@@ -173,7 +173,6 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
         f"--urls={combined_urls}",
         f"--upload-only={upload_only_str}",
     ]
-    logging.info(cmd)
 
     try:
         _exec_subprocess(cmd)
