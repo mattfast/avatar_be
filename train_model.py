@@ -140,7 +140,7 @@ def check_job_until_finished(job_url, user_id):
 
 def _exec_subprocess(cmd: str):
     """Executes subprocess and prints log to terminal while subprocess is running."""
-    logging.info(subprocess.run("modal --help", shell=True, executable="/bin/bash"))
+    logging.info(subprocess.run("/home/ubuntu/.local/bin/modal --help", shell=True, executable="/bin/bash"))
     # process = subprocess.Popen(
     #     [cmd],
     #     stdout=subprocess.PIPE,
