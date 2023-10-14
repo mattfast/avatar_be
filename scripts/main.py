@@ -60,7 +60,7 @@ def run_modal_training_script(max_users: int):
             continue
 
         s3_upload_status = training_job.get("modal_s3_upload_status", None)
-        if training_job is not None and s3_upload_status == "failure":
+        if training_status == "success" and s3_upload_status == "failure":
             logging.info(f"POSTING THREAD FOR UPLOAD FOR {user_id}")
             post_thread = threading.Thread(
                 target=launch_modal_training_command, args=[user_id, True]
