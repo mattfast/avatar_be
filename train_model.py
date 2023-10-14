@@ -207,6 +207,7 @@ def _exec_subprocess_python(cmd: str):
 
 def launch_initial():
     prefix = PATH_PREFIX
+    logging.info("LOGOGOGOGOGOGOG")
     cmd = " ".join([
         "python3",
         f"{prefix}launch.py",
