@@ -140,7 +140,7 @@ def check_job_until_finished(job_url, user_id):
 
 def _exec_subprocess(cmd: str):
     """Executes subprocess and prints log to terminal while subprocess is running."""
-    logging.info(subprocess.run("modal --help", shell=True, executable="/bin/bash"))
+    logging.info(subprocess.run("/home/ubuntu/.local/bin/modal --help", shell=True, executable="/bin/bash"))
     # process = subprocess.Popen(
     #     [cmd],
     #     stdout=subprocess.PIPE,
@@ -178,43 +178,6 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
 
     try:
         _exec_subprocess(cmd)
-    except Exception as e:
-        # Call failure
-        logging.info("ERROR")
-        logging.info(e)
-
-
-def _exec_subprocess_python(cmd: str):
-    """Executes subprocess and prints log to terminal while subprocess is running."""
-    # logging.info(subprocess.run("/home/ubuntu/.local/bin/modal --help", shell=True, executable="/bin/bash"))
-    process = subprocess.Popen(
-        [cmd],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        shell=True,
-        executable="/bin/bash"
-    )
-
-    # TODO: Remove this. Will clutter Output
-    with process.stdout as pipe:
-        for line in iter(pipe.readline, b""):
-            line_str = line.decode()
-            logging.info(f"{line_str}")
-
-    if exitcode := process.wait() != 0:
-        raise subprocess.CalledProcessError(exitcode,  cmd)
-
-
-def launch_initial():
-    prefix = PATH_PREFIX
-    logging.info("LOGOGOGOGOGOGOG")
-    cmd = " ".join([
-        "python3",
-        f"{prefix}launch.py",
-    ])
-
-    try:
-        _exec_subprocess_python(cmd)
     except Exception as e:
         # Call failure
         logging.info("ERROR")

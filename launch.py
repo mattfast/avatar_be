@@ -51,7 +51,7 @@ def launch_command(urls: list[str], user_id, upload_only: bool = False):
 
 
 if __name__ == "__main__":
-    launch_modal_training_command("d1552d6f-a2e8-4d6f-aa1c-88aa8fd7f719")
+    launch_command(urls, "AKASH_USER")
 
 # Test this on EC2 by installing new dependencies
 # test this end to end (with s3 uploading)
