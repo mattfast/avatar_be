@@ -2,7 +2,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from constants import PATH_PREFIX
-
 from modal import Image, Mount, Secret, Stub, Volume, asgi_app, method
 
 assets_path = Path(__file__).parent / "assets"
@@ -245,7 +244,7 @@ sys.path.append(PATH_PREFIX)
 
 
 @stub.local_entrypoint()
-def run(urls: str, user: str, upload_only: str = "false"):
+def run(user: str, upload_only: str = "false", urls: str = ""):
     parsed_urls = [url.strip() for url in urls.split("\n")]
     print("HELLOHELLO")
 

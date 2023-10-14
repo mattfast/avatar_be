@@ -138,10 +138,10 @@ def check_job_until_finished(job_url, user_id):
     )
 
 
-def _exec_subprocess(cmd: list[str]):
+def _exec_subprocess(cmd: str):
     """Executes subprocess and prints log to terminal while subprocess is running."""
     process = subprocess.Popen(
-        cmd,
+        [cmd],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         shell=True,
@@ -166,14 +166,15 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
     prefix = PATH_PREFIX
     upload_only_str = "true" if upload_only else "false"
 
-    cmd = [
+    cmd = " ".join([
         "modal",
         "run",
         f"{prefix}modal_dreambooth.py",
         f"--user={user_id}",
-        f"--urls={combined_urls}",
+        f"--urls='{combined_urls}'",
         f"--upload-only={upload_only_str}",
-    ]
+    ])
+    print(cmd)
 
     try:
         _exec_subprocess(cmd)
