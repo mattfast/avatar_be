@@ -7,7 +7,7 @@ import threading
 import time
 from copy import deepcopy
 from typing import Optional
-
+import logging
 import requests
 
 sys.path.append("/Users/akashsamant/imagegen/avatar_be")
@@ -17,6 +17,7 @@ from train_model import check_job_status, launch_modal_training_command, post_re
 
 parser = argparse.ArgumentParser()
 
+logging.basicConfig(level=logging.INFO)
 
 def run_training_job_script():
     all_users = mongo_read("Users", {"images_uploaded": True}, find_many=True)
@@ -36,36 +37,37 @@ def run_training_job_script():
 def run_modal_training_script(max_users: int):
     users_to_train = mongo_read("Users", {"images_uploaded": True}, find_many=True)
     num_trained = 0
-    while True:
-        if num_trained < max_users:
+    for user in users_to_train:
+        if num_trained >= max_users:
             break
-        for user in users_to_train:
-            user_id = user.get("user_id")
-            training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
-            if training_job is None:
-                print(f"POSTING TRAINING REQUEST FOR {user_id}")
-                post_thread = threading.Thread(
-                    target=launch_modal_training_command, args=[user_id, False]
-                )
-                post_thread.start()
-                continue
+        user_id = user.get("user_id")
+        training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
+        if training_job is None:
+            logging.info(f"POSTING TRAINING REQUEST FOR {user_id}")
+            post_thread = threading.Thread(
+                target=launch_modal_training_command, args=[user_id, False]
+            )
+            post_thread.start()
+            continue
 
-            training_status = training_job.get("modal_training_status")
-            if training_status == "failure":
-                print(f"POSTING TRAINING REQUEST FOR PREVIOUSLY FAILED {user_id}")
-                post_thread = threading.Thread(
-                    target=launch_modal_training_command, args=[user_id, False]
-                )
-                post_thread.start()
-                continue
+        training_status = training_job.get("modal_training_status", None)
+        if training_status == "failure":
+            logging.info(f"POSTING TRAINING REQUEST FOR PREVIOUSLY FAILED {user_id}")
+            post_thread = threading.Thread(
+                target=launch_modal_training_command, args=[user_id, False]
+            )
+            post_thread.start()
+            continue
 
-            s3_upload_status = training_job.get("modal_s3_upload_status", None)
-            if s3_upload_status == "failure":
-                print(f"POSTING THREAD FOR UPLOAD FOR {user_id}")
-                post_thread = threading.Thread(
-                    target=launch_modal_training_command, args=[user_id, True]
-                )
-                post_thread.start()
+        s3_upload_status = training_job.get("modal_s3_upload_status", None)
+        if training_job is not None and s3_upload_status == "failure":
+            logging.info(f"POSTING THREAD FOR UPLOAD FOR {user_id}")
+            post_thread = threading.Thread(
+                target=launch_modal_training_command, args=[user_id, True]
+            )
+            post_thread.start()
+        num_trained += 1
+    logging.info("BREAKING")
 
 
 def run_training_job_script_loop():

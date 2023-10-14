@@ -299,7 +299,7 @@ def run(urls: str, user: str, upload_only: str = "false"):
             mongo_upsert(
                 "UserTrainingJobs",
                 {"user_id": user},
-                {"modal_upload_status": "failure"},
+                {"modal_s3_upload_status": "failure"},
             )
 
     except Exception as e:

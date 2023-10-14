@@ -1,6 +1,7 @@
 import json
 import subprocess
 import threading
+import logging
 from constants import PATH_PREFIX
 import time
 
@@ -9,6 +10,8 @@ import requests
 from botocore.exceptions import ClientError
 
 from dbs.mongo import mongo_read, mongo_upsert
+
+logging.basicConfig(level=logging.INFO)
 
 dreamlook_api_key = "dl-DBF11F7B34E04537B0EE54DF15C07255"
 headers = {
@@ -93,7 +96,7 @@ def check_job_status():
         user_id = job.get("user_id")
         job_url = job.get("job_url", None)
         if job_url is None:
-            print("ERROR: JOB Started with no URL")
+            logging.info("ERROR: JOB Started with no URL")
             mongo_upsert(
                 "UserTrainingJobs", {"user_id": user_id}, {"training_status": "failure"}
             )
@@ -102,7 +105,7 @@ def check_job_status():
         loaded_resp = json.loads(res2.text)
         state = loaded_resp["state"]
 
-        print(f"User ID {user_id} is in state: {state}")
+        logging.info(f"User ID {user_id} is in state: {state}")
         if state == "failure":
             mongo_upsert(
                 "UserTrainingJobs", {"user_id": user_id}, {"training_status": "failure"}
@@ -129,7 +132,7 @@ def check_job_until_finished(job_url, user_id):
             return
         time.sleep(20)
         is_success = state == "success"
-    print("SUCCESS")
+    logging.info("SUCCESS")
     mongo_upsert(
         "UserTrainingJobs", {"user_id": user_id}, {"training_status": "success"}
     )
@@ -145,7 +148,7 @@ def _exec_subprocess(cmd: list[str]):
     with process.stdout as pipe:
         for line in iter(pipe.readline, b""):
             line_str = line.decode()
-            print(f"{line_str}", end="")
+            logging.info(f"{line_str}", end="")
 
     if exitcode := process.wait() != 0:
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
@@ -173,4 +176,4 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
         _exec_subprocess(cmd)
     except:
         # Call failure
-        print("ERROR")
+        logging.info("ERROR")

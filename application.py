@@ -931,7 +931,12 @@ def run_inferences():
         "UserTrainingJobs",
         {
             "$and": [
-                {"upload_status": "success"},
+                {
+                    "$or": [
+                        {"upload_status": "success"},
+                        {"modal_s3_upload_status": "success"},
+                    ]
+                },
                 {
                     "$or": [
                         {"generation_status": {"$exists": False}},
