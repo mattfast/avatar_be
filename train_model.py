@@ -146,11 +146,11 @@ def _exec_subprocess(cmd: list[str]):
         stderr=subprocess.STDOUT,
     )
 
-    # TODO: Remove this. Will clutter Output
-    with process.stdout as pipe:
-        for line in iter(pipe.readline, b""):
-            line_str = line.decode()
-            logging.info(f"{line_str}", end="")
+    # # TODO: Remove this. Will clutter Output
+    # with process.stdout as pipe:
+    #     for line in iter(pipe.readline, b""):
+    #         line_str = line.decode()
+    #         logging.info(f"{line_str}", end="")
 
     if exitcode := process.wait() != 0:
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
