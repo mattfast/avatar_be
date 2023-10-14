@@ -141,14 +141,17 @@ def check_job_until_finished(job_url, user_id):
 def _exec_subprocess(cmd: list[str]):
     """Executes subprocess and prints log to terminal while subprocess is running."""
     process = subprocess.Popen(
-        cmd
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        shell=True,
     )
 
-    # # # TODO: Remove this. Will clutter Output
-    # with process.stdout as pipe:
-    #     for line in iter(pipe.readline, b""):
-    #         line_str = line.decode()
-    #         logging.info(f"{line_str}", end="")
+    # TODO: Remove this. Will clutter Output
+    with process.stdout as pipe:
+        for line in iter(pipe.readline, b""):
+            line_str = line.decode()
+            logging.info(f"{line_str}", end="")
 
     if exitcode := process.wait() != 0:
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
