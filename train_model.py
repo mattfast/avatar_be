@@ -151,7 +151,7 @@ def _exec_subprocess(cmd: list[str]):
     with process.stdout as pipe:
         for line in iter(pipe.readline, b""):
             line_str = line.decode()
-            logging.info(f"{line_str}", end="")
+            logging.info(f"{line_str}")
 
     if exitcode := process.wait() != 0:
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
