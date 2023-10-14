@@ -173,6 +173,7 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
         f"--urls={combined_urls}",
         f"--upload-only={upload_only_str}",
     ]
+    logging.info(cmd)
 
     try:
         _exec_subprocess(cmd)
