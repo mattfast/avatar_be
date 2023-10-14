@@ -168,7 +168,7 @@ def launch_modal_training_command(user_id, upload_only: bool = False):
     upload_only_str = "true" if upload_only else "false"
 
     cmd = " ".join([
-        "/home/ubuntu/.local/bin/modal",
+        "modal",
         "run",
         f"{prefix}modal_dreambooth.py",
         f"--user={user_id}",
