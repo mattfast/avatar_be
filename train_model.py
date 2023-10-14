@@ -145,6 +145,8 @@ def _exec_subprocess(cmd: list[str]):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
+
+    # TODO: Remove this. Will clutter Output
     with process.stdout as pipe:
         for line in iter(pipe.readline, b""):
             line_str = line.decode()
