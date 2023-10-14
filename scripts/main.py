@@ -13,7 +13,7 @@ import requests
 sys.path.append("/Users/akashsamant/imagegen/avatar_be")
 
 from dbs.mongo import mongo_read
-from train_model import check_job_status, launch_modal_training_command, post_request
+from train_model import check_job_status, launch_modal_training_command, post_request, launch_initial
 
 parser = argparse.ArgumentParser()
 
@@ -33,7 +33,7 @@ def run_training_job_script():
             print(f"POSTING TRAINING REQUEST FOR PREVIOUSLY FAILED {user_id}")
             post_request(user_id)
 
-
+import subprocess
 def run_modal_training_script(max_users: int):
     users_to_train = mongo_read("Users", {"images_uploaded": True}, find_many=True)
     num_trained = 0
@@ -46,7 +46,7 @@ def run_modal_training_script(max_users: int):
         if training_job is None:
             logging.info(f"POSTING TRAINING REQUEST FOR {user_id}")
             post_thread = threading.Thread(
-                target=launch_modal_training_command, args=[user_id, False]
+                target=launch_initial,
             )
             post_thread.start()
             num_trained += 1
@@ -56,7 +56,7 @@ def run_modal_training_script(max_users: int):
         if training_status == "failure":
             logging.info(f"POSTING TRAINING REQUEST FOR PREVIOUSLY FAILED {user_id}")
             post_thread = threading.Thread(
-                target=launch_modal_training_command, args=[user_id, False]
+                target=launch_initial,
             )
             post_thread.start()
             num_trained += 1
