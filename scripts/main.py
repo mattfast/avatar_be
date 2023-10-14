@@ -37,9 +37,11 @@ def run_training_job_script():
 def run_modal_training_script(max_users: int):
     users_to_train = mongo_read("Users", {"images_uploaded": True}, find_many=True)
     num_trained = 0
+    logging.info(f"MAX USERS: {max_users}")
     for user in users_to_train:
         if num_trained >= max_users:
             break
+        logging.info(user)
         user_id = user.get("user_id")
         training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
         if training_job is None:
