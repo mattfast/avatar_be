@@ -36,5 +36,5 @@ sendblue==0.1.2
 TikTokApi==6.1.0
 flask-socketio==5.3.6
 simple-websocket==0.10.1
-pillow
-modal
+Pillow==10.0.1
+modal==0.54.3815
