@@ -67,7 +67,7 @@ def run_modal_training_script(max_users: int):
             )
             post_thread.start()
         num_trained += 1
-    logging.info("BREAKING")
+    logging.info("FINISHED PROCESSING NEXT MODAL JOBS")
 
 
 def run_training_job_script_loop():
