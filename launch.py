@@ -3,11 +3,11 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=BMHP3rWQSpIlhYOhVh2omsL6wKg%3D&Expires=1697235208',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-1-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=a6dvfIYpeoVjiXdd2DIj72VzfeU%3D&Expires=1697235208',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-2-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=t49ouPAHaZJSNNY9U2QEfZYBDCI%3D&Expires=1697235208',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-3-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=I0QKffBYjVq6XwqtjfKaPizWeJ4%3D&Expires=1697235208',
- 'https://dopple-selfies.s3.amazonaws.com/selfie-4-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=woHimd5Px5rQkepOhUTQ8AMW03A%3D&Expires=1697235208']
+urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=RD8idcxOjJPsMSwZqLBBuixOEHU%3D&Expires=1697274279',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-1-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=ktS6qGyOXcVe%2Bhf2w6YqvanVkyI%3D&Expires=1697274279',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-2-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=WYag82lJJSLp3bXAT3L738gDn7w%3D&Expires=1697274280',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-3-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=h4Df8Pco3nHl49LmuQpxmq%2F1Uro%3D&Expires=1697274280',
+ 'https://dopple-selfies.s3.amazonaws.com/selfie-4-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=OQnb63%2Fk6c%2BSFXaArxxJJoNTGPE%3D&Expires=1697274280']
 prefix = "weird_prefix"
 
 
