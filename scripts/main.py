@@ -41,7 +41,6 @@ def run_modal_training_script(max_users: int):
     for user in users_to_train:
         if num_trained >= max_users:
             break
-        logging.info(user)
         user_id = user.get("user_id")
         training_job = mongo_read("UserTrainingJobs", {"user_id": user_id})
         if training_job is None:
@@ -50,6 +49,7 @@ def run_modal_training_script(max_users: int):
                 target=launch_modal_training_command, args=[user_id, False]
             )
             post_thread.start()
+            num_trained += 1
             continue
 
         training_status = training_job.get("modal_training_status", None)
@@ -59,6 +59,7 @@ def run_modal_training_script(max_users: int):
                 target=launch_modal_training_command, args=[user_id, False]
             )
             post_thread.start()
+            num_trained += 1
             continue
 
         s3_upload_status = training_job.get("modal_s3_upload_status", None)
@@ -68,7 +69,7 @@ def run_modal_training_script(max_users: int):
                 target=launch_modal_training_command, args=[user_id, True]
             )
             post_thread.start()
-        num_trained += 1
+            num_trained += 1
     logging.info("FINISHED PROCESSING NEXT MODAL JOBS")
 
 
