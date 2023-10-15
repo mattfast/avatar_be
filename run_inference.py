@@ -299,11 +299,10 @@ def generate_all_images(user_id):
 
     # Profile of funny profiles that have been generated so far
     funny_profile_style_dict = {}
-    MAX_NUM_FUNNY_PROFILES = 3
+    MAX_NUM_FUNNY_PROFILES = 1
 
     try:
         num_funny_styles = 0
-        has_animal_style = False
         # Generate 10 images for the user
         for i in range(15):
             key = f"{user_id}/profile_{i}.png"
@@ -311,11 +310,7 @@ def generate_all_images(user_id):
             category = random.choice(actual_choice_list)
 
             while True:
-                # always generate a funny style at least once
-                if i == 9 and num_funny_styles == 0:
-                    style_options = funny_profile_styles
-                else:
-                    style_options = list(starter_map[category].keys()) + extra_styles
+                style_options = list(starter_map[category].keys()) + extra_styles
 
                 logging.info("CHOOSING RANDOM STYLE FROM LIST")
                 style = random.choice(style_options)
@@ -323,7 +318,6 @@ def generate_all_images(user_id):
                 # Parse through funny styles
                 is_funny_style = style in funny_profile_styles
                 if is_funny_style:
-                    is_animal_style = style in random_animal_styles
                     # Don't generate too many profiles
                     # Don't generate the first profile as funny
                     # Don't regenerate a funny profile that has already been generated
@@ -334,13 +328,8 @@ def generate_all_images(user_id):
                         continue
                     elif style in funny_profile_style_dict:
                         continue
-                    elif is_animal_style and has_animal_style:
-                        continue
-
                     num_funny_styles += 1
                     funny_profile_style_dict[style] = True
-                    if is_animal_style and not has_animal_style:
-                        has_animal_style = True
                     break
                 else:
                     break

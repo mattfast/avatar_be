@@ -1,8 +1,5 @@
 {
    "athlete_prompts": {
-      "stick_figure": [
-         "margot_snap"
-      ],
       "pop": [
          "tester",
          "brad"
@@ -32,9 +29,6 @@
       ]
    },
    "warrior_prompts": {
-      "stick_figure": [
-         "margot_snap"
-      ],
       "pop": [
          "spectre2",
          "her",
@@ -100,9 +94,6 @@
       ]
    },
    "magic_prompts": {
-      "stick_figure": [
-         "margot_snap"
-      ],
       "pop": [
          "superman",
          "her",
@@ -147,9 +138,6 @@
       ]
    },
    "king_prompts": {
-      "stick_figure": [
-         "margot_snap"
-      ],
       "pop": [
          "superman",
          "her",
@@ -202,9 +190,6 @@
       ]
    },
    "princess_prompts": {
-      "stick_figure": [
-         "margot_snap"
-      ],
       "pop": [
          "spectre2",
          "tester"
@@ -229,9 +214,6 @@
       ]
    },
    "cowboy_prompts": {
-      "stick_figure": [
-         "margot_snap"
-      ],
       "pop": [
          "spectre2",
          "superman",
