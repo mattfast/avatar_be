@@ -213,7 +213,7 @@ def backup_setup(runtime_sm_client, endpoint_name: str):
         EndpointName=endpoint_name,
         ContentType="application/octet-stream",
         Body=json.dumps(payload),
-        TargetModel="setup_conda.tar.gz",
+        TargetModel="setup_conda_2.tar.gz",
     )
     logging.info(response)
 
