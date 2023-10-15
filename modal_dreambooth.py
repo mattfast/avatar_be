@@ -246,7 +246,6 @@ sys.path.append(PATH_PREFIX)
 @stub.local_entrypoint()
 def run(user: str, upload_only: str = "false", urls: str = ""):
     parsed_urls = [url.strip() for url in urls.split("\n")]
-    print("HELLOHELLO")
 
     try:
         from dbs.mongo import mongo_upsert

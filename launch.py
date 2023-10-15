@@ -1,7 +1,6 @@
 import argparse
 import subprocess
 from constants import PATH_PREFIX
-from train_model import launch_modal_training_command
 
 parser = argparse.ArgumentParser()
 
@@ -62,4 +61,4 @@ if __name__ == "__main__":
 ######## .... installing requirements ########
 # sudo apt install awscli
 # TOKEN=$(aws --region us-east-1 secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:us-east-1:400240637726:secret:ModalAPISecret-3ywzh1 --query SecretString --output text | cut -d: -f2 | tr -d \"})
-# modal token set --token-id ak-0gdVZa8Bo3SuuqTnlpje5S --token-secret TOKEN
+# modal token set --token-id ak-0gdVZa8Bo3SuuqTnlpje5S --token-secret $TOKEN

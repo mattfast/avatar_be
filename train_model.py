@@ -140,25 +140,21 @@ def check_job_until_finished(job_url, user_id):
 
 def _exec_subprocess(cmd: str):
     """Executes subprocess and prints log to terminal while subprocess is running."""
-    logging.info(subprocess.run('echo "$SHELL"', shell=True))
-    logging.info(subprocess.run("which python3", shell=True))
-    logging.info(subprocess.run("which modal", shell=True))
-    logging.info(subprocess.run("modal --help", shell=True))
-    # process = subprocess.Popen(
-    #     [cmd],
-    #     stdout=subprocess.PIPE,
-    #     stderr=subprocess.STDOUT,
-    #     shell=True,
-    # )
-    #
-    # # TODO: Remove this. Will clutter Output
-    # with process.stdout as pipe:
-    #     for line in iter(pipe.readline, b""):
-    #         line_str = line.decode()
-    #         logging.info(f"{line_str}")
-    #
-    # if exitcode := process.wait() != 0:
-    #     raise subprocess.CalledProcessError(exitcode,  cmd)
+    process = subprocess.Popen(
+        [cmd],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        shell=True,
+    )
+
+    # TODO: Remove this. Will clutter Output
+    with process.stdout as pipe:
+        for line in iter(pipe.readline, b""):
+            line_str = line.decode()
+            logging.info(f"{line_str}")
+
+    if exitcode := process.wait() != 0:
+        raise subprocess.CalledProcessError(exitcode,  cmd)
 
 
 def launch_modal_training_command(user_id, upload_only: bool = False):
