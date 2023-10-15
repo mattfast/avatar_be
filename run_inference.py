@@ -167,9 +167,13 @@ def run_sd_config(
                     logging.info("REQUEST PROCESSING ERROR")
                     logging.info(e)
                 elif MODEL_ERROR in except_str:
+                    # Weird token error, pass to next endpoint
                     logging.info("Generic Model Error")
                     logging.info(e)
                     time.sleep(5)
+                    if "startoftext" in except_str:
+                        logging.info("TOKEN ERROR")
+                        return None
                     continue
                 else:
                     logging.info("Another Error")
