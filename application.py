@@ -10,6 +10,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from pymongo import DESCENDING
 from twilio.twiml.messaging_response import MessagingResponse
+import stripe
 
 from auth import login
 from dbs.mongo import (
@@ -20,7 +21,7 @@ from dbs.mongo import (
     mongo_upsert,
     mongo_write,
 )
-from keys import carrier, checkly_token, is_prod, lambda_token, sendblue_signing_secret
+from keys import carrier, checkly_token, is_prod, lambda_token, stripe_secret_key, stripe_price_id
 from messaging import TextType, send_message
 from package_model import package_model
 from run_inference import generate_all_images
@@ -42,10 +43,46 @@ socketio = SocketIO(
     transports=["websocket"],
 )
 
+stripe.api_key = stripe_secret_key
 
 @app.route("/")
 def healthy():
     return "healthy!"
+
+@app.route("/create-payment-intent", methods=['POST'])
+def create_payment_intent():
+    try:
+        cookie = request.headers.get("auth-token")
+        if cookie is None:
+            return "cookie missing", 400
+        
+        user = get_user(cookie)
+        if user is None:
+            return "user invalid", 401
+        
+        # Retrieve price details using the priceId (this step is optional but ensures accuracy)
+        price = stripe.Price.retrieve(stripe_price_id)
+
+        # Create a PaymentIntent with the amount and currency
+        payment_intent = stripe.PaymentIntent.create(
+            amount=price.unit_amount,
+            currency=price.currency
+            # Add more details if needed
+        )
+
+        client_secret = payment_intent.client_secret
+        if client_secret is None:
+            return "unable to get client_secret", 500
+                
+        mongo_upsert("Users", { "user_id": user.get("user_id", "") }, { "stripe_client_secret": client_secret })
+
+        return {
+            'client_secret': client_secret
+        }, 200
+
+    except Exception as e:
+        print(e)
+        return {'error': str(e)}, 500
 
 
 @app.route("/generate-auth", methods=["POST"])
@@ -142,7 +179,6 @@ def validate_cookie():
         return "user hasn't completed signup", 400
 
     return {"user_id": user.get("user_id", None)}, 200
-
 
 @app.route("/get-user", methods=["GET"])
 def get_user_route():
