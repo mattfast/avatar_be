@@ -2,6 +2,10 @@ import argparse
 import subprocess
 from constants import PATH_PREFIX
 
+import sys
+sys.path.append("/Users/akashsamant/imagegen/avatar_be")
+from train_model import create_presigned_url
+
 parser = argparse.ArgumentParser()
 
 urls = ['https://dopple-selfies.s3.amazonaws.com/selfie-0-20c40a9c-4988-4ab7-a7d3-5af51348bf13.jpg?AWSAccessKeyId=AKIAV2MBTO4PKRWFUZZF&Signature=XPAr%2F1RrK%2FnXewt11Zg9ivUXVXM%3D&Expires=1697309818',
@@ -27,7 +31,7 @@ def _exec_subprocess(cmd: list[str]):
         raise subprocess.CalledProcessError(exitcode, "\n".join(cmd))
 
 
-def launch_command(urls: list[str], user_id, upload_only: bool = False):
+def launch_command(urls: list[str], user_id, upload_only: bool = True):
     combined_urls = "\n".join(urls)
     upload_only_str = "true" if upload_only else "false"
 
@@ -44,13 +48,27 @@ def launch_command(urls: list[str], user_id, upload_only: bool = False):
 
     try:
         _exec_subprocess(cmd)
-    except:
+    except Exception as e:
         # Call failure
         print("ERROR")
+        print(str(e))
 
 
 if __name__ == "__main__":
-    launch_command(urls, "AKASH_USER")
+    parser.add_argument('--user', action='store', type=str)
+    args = parser.parse_args()
+
+    user_name = args.user
+
+    end_range = 6
+    if user_name == "chal":
+        end_range = 7
+    urls = []
+    for i in range(1, end_range):
+        url = create_presigned_url("dopple-selfies", f"{user_name}{i}.jpeg")
+        urls.append(url)
+    print("\n".join(urls))
+    launch_command(urls, user_name)
 
 # Test this on EC2 by installing new dependencies
 # test this end to end (with s3 uploading)

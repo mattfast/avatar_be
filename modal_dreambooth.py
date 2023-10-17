@@ -237,10 +237,6 @@ def upload_to_s3(ids_to_parse: list[str], config_file_str: str, model_file_str: 
         stub.volume.commit()
 
 
-import sys
-sys.path.append("/home/ubuntu/avatar_be/")
-
-
 @stub.local_entrypoint()
 def run(user: str, upload_only: str = "false", urls: str = ""):
     parsed_urls = [url.strip() for url in urls.split("\n")]
@@ -276,7 +272,7 @@ def run(user: str, upload_only: str = "false", urls: str = ""):
 
         try:
             # Load String Information for File Writing
-            artifacts_folder = Path("/home/ubuntu/avatar_be/")/"packaged_models"/"artifacts"
+            artifacts_folder = Path("packaged_models")/"artifacts"
             model_file_str = open(artifacts_folder / "model_dreambooth.py", 'r').read()
             config_file_str = open(artifacts_folder / "config.pbtxt", 'r').read()
 

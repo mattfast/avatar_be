@@ -71,7 +71,7 @@ styles = {
     }
 }
 
-PATH_PREFIX =  "/home/ubuntu/avatar_be/"
+PATH_PREFIX = ""
 
 random_animal_styles = ["mooing cow"]
 extra_boy_styles = random_animal_styles + []
