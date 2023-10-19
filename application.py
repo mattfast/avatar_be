@@ -38,6 +38,9 @@ socketio = SocketIO(
         "http://localhost:3000",
         "https://milk-ai.com",
         "https://milk-ai.com/chat",
+        "https://dopple.club",
+        "https://dopple.club/signup",
+        "https://dopple.club/profile",
     ],
     async_mode="threading",
     transports=["websocket"],
@@ -49,8 +52,8 @@ stripe.api_key = stripe_secret_key
 def healthy():
     return "healthy!"
 
-@app.route("/create-payment-intent", methods=['POST'])
-def create_payment_intent():
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
     try:
         cookie = request.headers.get("auth-token")
         if cookie is None:
@@ -58,31 +61,56 @@ def create_payment_intent():
         
         user = get_user(cookie)
         if user is None:
-            return "user invalid", 401
-        
-        # Retrieve price details using the priceId (this step is optional but ensures accuracy)
-        price = stripe.Price.retrieve(stripe_price_id)
-
-        # Create a PaymentIntent with the amount and currency
-        payment_intent = stripe.PaymentIntent.create(
-            amount=price.unit_amount,
-            currency=price.currency
-            # Add more details if needed
+            return "user not found", 400
+    
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': stripe_price_id,
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url='http://localhost:3000/signup?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='http://localhost:3000/signup?session_id=invalid',
         )
 
-        client_secret = payment_intent.client_secret
-        if client_secret is None:
-            return "unable to get client_secret", 500
-                
-        mongo_upsert("Users", { "user_id": user.get("user_id", "") }, { "stripe_client_secret": client_secret })
+        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "stripe_session_id": session.id })
 
-        return {
-            'client_secret': client_secret
-        }, 200
-
+        return {'session_id': session.id}, 200
     except Exception as e:
         print(e)
-        return {'error': str(e)}, 500
+        return { "error": str(e) }, 403
+    
+
+@app.route('/checkout-success', methods=['POST'])
+def checkout_success():
+    try:
+        cookie = request.headers.get("auth-token")
+        if cookie is None:
+            return "cookie missing", 400
+        
+        user = get_user(cookie)
+        if user is None:
+            return "user not found", 400
+    
+        data = request.json
+        if data is None:
+            return "data missing", 400
+        
+        session_id = data.get("session_id", None)
+        if session_id is None:
+            return "session_id missing", 400
+    
+        session = stripe.checkout.Session.retrieve(session_id)
+        payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
+        customer_id = session.customer
+        payment_method_id = payment_intent.payment_method
+
+        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "stripe_customer_id": customer_id, "stripe_payment_method_id": payment_method_id })
+
+        return "saved", 200
+    except Exception as e:
+        return { "error": str(e)}, 403
 
 
 @app.route("/generate-auth", methods=["POST"])
