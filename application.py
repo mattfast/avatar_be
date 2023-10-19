@@ -70,8 +70,8 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='payment',
-            success_url='http://localhost:3000/signup?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url='http://localhost:3000/signup?session_id=invalid',
+            success_url='https://dopple.club/signup?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://dopple.club/signup?session_id=invalid',
         )
 
         mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "stripe_session_id": session.id })
