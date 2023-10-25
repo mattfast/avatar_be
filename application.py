@@ -151,6 +151,16 @@ def opened_typeform():
     except Exception as e:
         print(e)
         return { "error": str(e) }, 403
+    
+
+@app.route("/user-count", methods=["GET"])
+def user_count():
+    try:
+        count = mongo_count("Users", {})
+        return { "user_count": count }, 200
+    except Exception as e:
+        print(e)
+        return { "error": str(e) }, 403
 
 
 
