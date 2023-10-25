@@ -79,7 +79,7 @@ def create_fitpix_user():
         return { "error": str(e) }, 403
 
 
-@app.route("/log-click")
+@app.route("/log-click", methods=["POST"])
 def log_click():
     try:
         cookie = request.headers.get("auth-token")
@@ -106,7 +106,7 @@ def log_click():
         print(e)
         return { "error": str(e) }, 403
 
-@app.route("/add-to-waitlist")
+@app.route("/add-to-waitlist", methods=["POST"])
 def add_to_waitlist():
     try:
         cookie = request.headers.get("auth-token")
@@ -133,7 +133,7 @@ def add_to_waitlist():
         print(e)
         return { "error": str(e) }, 403
     
-@app.route("/opened-typeform")
+@app.route("/opened-typeform", methods=["POST"])
 def opened_typeform():
     try:
         cookie = request.headers.get("auth-token")
