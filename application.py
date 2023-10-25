@@ -23,7 +23,7 @@ from dbs.mongo import (
 )
 from keys import carrier, checkly_token, is_prod, lambda_token, stripe_secret_key, stripe_price_id
 from messaging import TextType, send_message
-from package_model import package_model
+#from package_model import package_model
 from run_inference import generate_all_images
 from scripts.main import run_modal_training_script, run_training_job_script
 from train_model import check_job_status, post_request
@@ -47,6 +47,112 @@ socketio = SocketIO(
 )
 
 stripe.api_key = stripe_secret_key
+
+@app.route("/create-fitpix-user", methods=["POST"])
+def create_fitpix_user():
+    try:
+        # create new user
+        user_id = str(uuid4())
+        mongo_write(
+            "Users",
+            {
+                "user_id": user_id,
+                "created_at": datetime.now(),
+            },
+        )
+
+        # returns new cookie
+        cookie = str(uuid4())
+        mongo_write(
+            "Cookies",
+            {
+                "cookie": cookie,
+                "user_id": user_id,
+                "created_at": datetime.now(),
+            },
+        )
+
+        return {"cookie": cookie, "user_id": user_id}, 200
+    
+    except Exception as e:
+        print(e)
+        return { "error": str(e) }, 403
+
+
+@app.route("/log-click")
+def log_click():
+    try:
+        cookie = request.headers.get("auth-token")
+        if cookie is None:
+            return "cookie missing", 400
+        
+        user = get_user(cookie)
+        if user is None:
+            return "user not found", 400
+        
+        data = request.json
+        if data is None:
+            return "data missing", 400
+        
+        position = data.get("position", None)
+        if position is None:
+            return "position missing", 400
+        
+        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { position: True })
+
+        return "updated", 200
+    
+    except Exception as e:
+        print(e)
+        return { "error": str(e) }, 403
+
+@app.route("/add-to-waitlist")
+def add_to_waitlist():
+    try:
+        cookie = request.headers.get("auth-token")
+        if cookie is None:
+            return "cookie missing", 400
+        
+        user = get_user(cookie)
+        if user is None:
+            return "user not found", 400
+        
+        data = request.json
+        if data is None:
+            return "data missing", 400
+        
+        number = data.get("number", None)
+        if number is None:
+            return "number missing", 400
+        
+        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "number": number })
+        
+        return "updated", 200
+
+    except Exception as e:
+        print(e)
+        return { "error": str(e) }, 403
+    
+@app.route("/opened-typeform")
+def opened_typeform():
+    try:
+        cookie = request.headers.get("auth-token")
+        if cookie is None:
+            return "cookie missing", 400
+        
+        user = get_user(cookie)
+        if user is None:
+            return "user not found", 400
+        
+        mongo_upsert("Users", { "user_id": user.get("user_id", None) }, { "opened_typeform": True })
+
+        return "updated", 200
+    
+    except Exception as e:
+        print(e)
+        return { "error": str(e) }, 403
+
+
 
 @app.route("/")
 def healthy():
@@ -936,6 +1042,7 @@ def train_modal_models():
 
 
 # Upload User Model to s3
+"""
 @app.route("/upload-models", methods=["POST"])
 def upload_models():
     data = request.json
@@ -1066,7 +1173,7 @@ def send_tiktoks_check():
 def test_message():
     send_message("hi!", "+12812240743")
     return "done", 200
-
+"""
 
 if __name__ == "__main__":
     app.debug = True

@@ -19,4 +19,4 @@ except pymongo.errors.ConfigurationError:
 else:
     print("MONGO CLIENT")
     print(client)
-mongo_db = client["DoppleProd"]
+mongo_db = client["FitpixProd"]
