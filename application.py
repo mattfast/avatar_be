@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from random import shuffle
 from uuid import uuid4
 
-from flask import Flask, Response, request
+from flask import Flask, Response, request, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from pymongo import DESCENDING
@@ -47,6 +47,12 @@ socketio = SocketIO(
 )
 
 stripe.api_key = stripe_secret_key
+
+@app.route('/.well-known/acme-challenge/<path:filename>')
+def acme_challenge(filename):
+    acme_challenge_dir = '/var/www/html/.well-known/acme-challenge/'
+    return send_from_directory(acme_challenge_dir, filename)
+
 
 @app.route("/create-fitpix-user", methods=["POST"])
 def create_fitpix_user():
